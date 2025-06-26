@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import { ensureFileExists } from "./file-utils.js";
 import { webcrack } from "./plugins/webcrack.js";
-import { verbose } from "./verbose.js";
+import { SecureLogger } from "./security/secure-logger.js";
+import { validateOutputPath } from "./security/input-validator.js";
 import { parse } from "@babel/parser";
 
 export async function unminify(
@@ -9,20 +10,21 @@ export async function unminify(
   outputDir: string,
   plugins: ((code: string) => Promise<string>)[] = []
 ) {
-  ensureFileExists(filename);
-  const bundledCode = await fs.readFile(filename, "utf-8");
-  const extractedFiles = await webcrack(bundledCode, outputDir);
+  const validatedFile = ensureFileExists(filename);
+  const validatedOutputDir = validateOutputPath(outputDir);
+  const bundledCode = await fs.readFile(validatedFile, "utf-8");
+  const extractedFiles = await webcrack(bundledCode, validatedOutputDir);
 
   for (let i = 0; i < extractedFiles.length; i++) {
-    verbose.log(`Processing file ${i + 1}/${extractedFiles.length}`);
+    SecureLogger.debug(`Processing file ${i + 1}/${extractedFiles.length}`);
 
     const file = extractedFiles[i];
     const code = await fs.readFile(file.path, "utf-8");
 
-    if (code.trim().length === 0) {
-      verbose.log(`Skipping empty file ${file.path}`);
-      continue;
-    }
+          if (code.trim().length === 0) {
+        SecureLogger.debug(`Skipping empty file ${file.path}`);
+        continue;
+      }
 
     let formattedCode = code;
 
@@ -39,8 +41,8 @@ export async function unminify(
       formattedCode = code;
     }
 
-    verbose.log("Input: ", code);
-    verbose.log("Output: ", formattedCode);
+    SecureLogger.debug("Input processed", { inputLength: code.length });
+    SecureLogger.debug("Output generated", { outputLength: formattedCode.length });
 
     await fs.writeFile(file.path, formattedCode);
   }
@@ -53,18 +55,19 @@ export async function unminifyParallel(
   concurrency: number
 ) {
   try {
-    ensureFileExists(filename);
-    const bundledCode = await fs.readFile(filename, "utf-8");
-    const extractedFiles = await webcrack(bundledCode, outputDir);
+    const validatedFile = ensureFileExists(filename);
+    const validatedOutputDir = validateOutputPath(outputDir);
+    const bundledCode = await fs.readFile(validatedFile, "utf-8");
+    const extractedFiles = await webcrack(bundledCode, validatedOutputDir);
 
     const processFile = async (file: { path: string }, index: number) => {
       try {
-        verbose.log(`Processing file ${index + 1}/${extractedFiles.length}`);
+        SecureLogger.debug(`Processing file ${index + 1}/${extractedFiles.length}`);
 
         const code = await fs.readFile(file.path, "utf-8");
 
         if (code.trim().length === 0) {
-          verbose.log(`Skipping empty file ${file.path}`);
+          SecureLogger.debug(`Skipping empty file ${file.path}`);
           return;
         }
 
@@ -98,8 +101,8 @@ export async function unminifyParallel(
         // Fix invalid escape sequences
         formattedCode = fixInvalidEscapeSequences(formattedCode);
 
-        verbose.log("Input: ", code);
-        verbose.log("Output: ", formattedCode);
+        SecureLogger.debug("Input processed", { inputLength: code.length, filePath: file.path });
+        SecureLogger.debug("Output generated", { outputLength: formattedCode.length, filePath: file.path });
 
         await fs.writeFile(file.path, formattedCode);
       } catch (error) {

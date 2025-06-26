@@ -1,5 +1,6 @@
 import { visitAllIdentifiers } from "./local-llm-rename/visit-all-identifiers.js";
-import { verbose } from "../verbose.js";
+import { SecureLogger } from "../security/secure-logger.js";
+import { parseGeminiResponse } from "../security/secure-json.js";
 import { showPercentage } from "../progress.js";
 import {
   GoogleGenerativeAI,
@@ -20,20 +21,27 @@ export function geminiRename({
     return await visitAllIdentifiers(
       code,
       async (name, surroundingCode) => {
-        verbose.log(`Renaming ${name}`);
-        verbose.log("Context: ", surroundingCode);
+        SecureLogger.debug(`Renaming ${name}`);
+        SecureLogger.debug("Context: ", { contextLength: surroundingCode.length });
 
-        const model = client.getGenerativeModel(
-          toRenameParams(name, modelName)
-        );
+        try {
+          const model = client.getGenerativeModel(
+            toRenameParams(name, modelName)
+          );
 
-        const result = await model.generateContent(surroundingCode);
+          const result = await model.generateContent(surroundingCode);
+          
+          const parsed = parseGeminiResponse(result.response.text());
 
-        const renamed = JSON.parse(result.response.text()).newName;
-
-        verbose.log(`Renamed to ${renamed}`);
-
-        return renamed;
+          SecureLogger.debug(`Renamed to ${parsed.newName}`);
+          return parsed.newName;
+        } catch (error) {
+          SecureLogger.error("Failed to rename variable with Gemini", { 
+            error: (error as Error).message,
+            variableName: name 
+          });
+          return name; // Fallback to original name
+        }
       },
       showPercentage
     );

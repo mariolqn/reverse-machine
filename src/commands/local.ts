@@ -5,7 +5,7 @@ import { unminifyParallel } from "../unminify.js";
 import prettier from "../plugins/prettier.js";
 import babel from "../plugins/babel/babel.js";
 import { localReanme } from "../plugins/local-llm-rename/local-llm-rename.js";
-import { verbose } from "../verbose.js";
+import { SecureLogger } from "../security/secure-logger.js";
 import os from "os";
 
 interface LocalOptions {
@@ -31,10 +31,10 @@ export const local = cli()
   .argument("<input>", "The input minified Javascript file")
   .action(async (filename: string, opts: LocalOptions) => {
     if (opts.verbose) {
-      verbose.enabled = true;
+      SecureLogger.enableVerbose();
     }
 
-    verbose.log("Starting local inference with options: ", opts);
+    SecureLogger.debug("Starting local inference with options: ", opts);
 
     const prompt = await llama({
       model: opts.model,

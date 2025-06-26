@@ -3,7 +3,7 @@ import prettier from "../plugins/prettier.js";
 import { unminifyParallel } from "../unminify.js";
 import babel from "../plugins/babel/babel.js";
 import { openaiRename } from "../plugins/openai/openai-rename.js";
-import { verbose } from "../verbose.js";
+import { SecureLogger } from "../security/secure-logger.js";
 import { env } from "../env.js";
 import os from "os";
 
@@ -21,7 +21,7 @@ export const openai = cli()
   .argument("input", "The input minified Javascript file")
   .action(async (filename, opts) => {
     if (opts.verbose) {
-      verbose.enabled = true;
+      SecureLogger.enableVerbose();
     }
 
     const apiKey = opts.apiKey ?? env("OPENAI_API_KEY");

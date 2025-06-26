@@ -2,7 +2,7 @@ import { cli } from "../cli.js";
 import prettier from "../plugins/prettier.js";
 import { unminify } from "../unminify.js";
 import babel from "../plugins/babel/babel.js";
-import { verbose } from "../verbose.js";
+import { SecureLogger } from "../security/secure-logger.js";
 import { geminiRename } from "../plugins/gemini-rename.js";
 import { env } from "../env.js";
 
@@ -19,7 +19,7 @@ export const azure = cli()
   .argument("input", "The input minified Javascript file")
   .action(async (filename, opts) => {
     if (opts.verbose) {
-      verbose.enabled = true;
+      SecureLogger.enableVerbose();
     }
 
     const apiKey = opts.apiKey ?? env("GEMINI_API_KEY");

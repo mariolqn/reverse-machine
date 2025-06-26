@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { visitAllIdentifiers } from "../local-llm-rename/visit-all-identifiers.js";
 import { showPercentage } from "../../progress.js";
-import { verbose } from "../../verbose.js";
+import { SecureLogger } from "../security/secure-logger.js";
 
 const CONTEXT_WINDOW_SIZE = 4000; // Increased context window
 const BATCH_SIZE = 10; // Number of renames to batch in a single API call
@@ -49,15 +49,11 @@ export function openaiRename({
         
         let parsedResult;
         try {
-          parsedResult = JSON.parse(result);
+          const { parseOpenAIResponse } = await import("../security/secure-json.js");
+          parsedResult = parseOpenAIResponse(result);
         } catch (error) {
-          console.error("Failed to parse API response:", result, error);
-          throw new Error("Invalid JSON response from OpenAI API");
-        }
-
-        if (!parsedResult.renamedVariables || !Array.isArray(parsedResult.renamedVariables)) {
-          console.error("Unexpected response structure:", parsedResult);
-          throw new Error("Unexpected response structure from OpenAI API");
+          console.error("Failed to parse or validate API response:", error);
+          throw new Error("Invalid or unsafe JSON response from OpenAI API");
         }
 
         parsedResult.renamedVariables.forEach((rename: { oldName: string; newName: string }) => {
@@ -70,7 +66,7 @@ export function openaiRename({
             }
             usedNames.add(finalNewName);
             cache.set(rename.oldName, finalNewName);
-            verbose.log(`Renamed ${rename.oldName} to ${finalNewName}`);
+            SecureLogger.debug(`Renamed ${rename.oldName} to ${finalNewName}`);
           }
         });
       } catch (error) {
