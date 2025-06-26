@@ -1,8 +1,69 @@
-models
-output
-dist
-test-output
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test outputs
+coverage/
+.nyc_output/
+*-test-output/
+*test-output*/
+smoke-test-output/
+integration-output/
+integration-fixtures/
+memory-test-output/
+perf-test-output/
+stress-test-output/
+compatibility-test-output/
+massive-output/
+empty-output/
+single-output/
+long-path-output/
+
+# Test files (generated)
+*-test.js
+*-stress.js
+memory-test.js
+perf-*.js
+compat-*.js
+massive-test.js
+empty.js
+single.js
+
+# Environment
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Runtime
+.humanifyjs/
+models/
+
+# Temporary files
+tmp/
+temp/
+
 dist.tar.gz
-node_modules
 package-lock.json

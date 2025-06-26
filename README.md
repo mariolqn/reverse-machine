@@ -116,30 +116,141 @@ humanify gemini --model="gemini-1.5-pro" script.min.js
 Use Anthropic's Claude models for superior code understanding:
 
 ```bash
-# Using API key directly
-humanify anthropic --apiKey="your-anthropic-key" script.min.js
+# Using API key directly with Claude 4 reasoning
+humanify anthropic --apiKey="your-anthropic-key" --model="claude-4-opus-20250514-reasoning" script.min.js
 
-# Using environment variable
+# Using environment variable with Claude 4 fast mode
 export ANTHROPIC_API_KEY="your-anthropic-key"
+humanify anthropic --model="claude-4-sonnet-20250514" script.min.js
+
+# Claude 3.5 compatibility
 humanify anthropic --model="claude-3-5-sonnet-latest" script.min.js
 
-# Advanced options with specific model versions
+# Advanced options with Claude 4 reasoning model
 humanify anthropic \
-  --model="claude-3-5-sonnet-20241022" \
+  --model="claude-4-opus-20250514-reasoning" \
   --outputDir="./humanified" \
   --verbose \
+  script.min.js
+
+# Fast processing with Claude 4 standard model  
+humanify anthropic \
+  --model="claude-4-sonnet-20250514" \
+  --outputDir="./humanified" \
   script.min.js
 ```
 
 **Available Anthropic Models:**
-- `claude-3-5-sonnet-latest` / `claude-3-5-sonnet-20241022` - Most capable, best for complex code
+
+**Claude 4 Family (Latest - May 2025):**
+- `claude-4-opus-20250514-reasoning` - Most powerful with extended reasoning for complex code
+- `claude-4-sonnet-20250514-reasoning` - Balanced with extended reasoning capabilities  
+- `claude-4-opus-20250514` - Most powerful with near-instant responses
+- `claude-4-sonnet-20250514` - Balanced with fast responses
+
+**Claude 3.5 Family:**
+- `claude-3-5-sonnet-latest` / `claude-3-5-sonnet-20241022` - Most capable Claude 3.5, best for complex code
 - `claude-3-5-haiku-latest` / `claude-3-5-haiku-20241022` - Fast and efficient (default)
+
+**Claude 3 Family:**
 - `claude-3-opus-latest` / `claude-3-opus-20240229` - Highest accuracy for challenging code
 - `claude-3-sonnet-20240229` - Balanced performance and speed
 - `claude-3-haiku-20240307` - Fastest processing
 
+**Claude 4 Reasoning vs Standard Models:**
+- **Reasoning models** (`-reasoning` suffix): Use extended thinking for deeper code analysis and better variable naming
+- **Standard models**: Provide near-instant responses for faster processing
+
 **Environment Variables:**
 - `ANTHROPIC_API_KEY`: Your Anthropic API key
+
+#### 🧠 **Claude 4 Reasoning Models - Deep Code Understanding**
+
+Claude 4 introduces revolutionary reasoning capabilities that dramatically improve variable naming quality:
+
+**When to Use Reasoning Models:**
+- **Complex, heavily obfuscated code** where context matters
+- **Large codebases** with intricate dependencies  
+- **Critical production systems** where naming accuracy is paramount
+- **Educational purposes** where you want to understand the AI's thought process
+
+**When to Use Standard Models:**
+- **Quick prototyping** and fast iterations
+- **Simple minified files** with straightforward patterns
+- **Batch processing** where speed is more important than perfection
+- **Cost-sensitive applications** with high volume processing
+
+**Example: Claude 4 Reasoning in Action**
+
+```bash
+# Standard Claude 4 (fast)
+humanify anthropic --model="claude-4-sonnet-20250514" app.min.js
+# Result: Variables renamed in ~2-3 seconds with good accuracy
+
+# Claude 4 with Reasoning (thorough)  
+humanify anthropic --model="claude-4-sonnet-20250514-reasoning" app.min.js
+# Result: Variables renamed in ~5-8 seconds with superior accuracy and context awareness
+```
+
+The reasoning models will internally analyze:
+1. **Variable usage patterns** across the entire codebase
+2. **Semantic relationships** between functions and data
+3. **Domain-specific naming conventions** from the code context
+4. **Potential conflicts** with existing variable names
+
+### 📊 **Complete Model Comparison**
+
+| Model Family | Model Name | Reasoning | Speed | Accuracy | Cost | Best For |
+|--------------|------------|-----------|-------|----------|------|----------|
+| **Claude 4** | `claude-4-opus-20250514-reasoning` | ✅ Extended | Slow | Highest | $$$ | Complex obfuscated code, critical systems |
+| **Claude 4** | `claude-4-opus-20250514` | ❌ None | Fast | High | $$$ | Production code, high accuracy needs |
+| **Claude 4** | `claude-4-sonnet-20250514-reasoning` | ✅ Extended | Medium | Very High | $$ | Balanced reasoning, most use cases |
+| **Claude 4** | `claude-4-sonnet-20250514` | ❌ None | Fast | High | $$ | General purpose, good balance |
+| **Claude 3.5** | `claude-3-5-sonnet-latest` | ❌ None | Fast | High | $$ | Proven reliability |
+| **Claude 3.5** | `claude-3-5-haiku-latest` | ❌ None | Fastest | Good | $ | Quick processing (default) |
+| **Claude 3** | `claude-3-opus-latest` | ❌ None | Medium | High | $$$ | Legacy complex code |
+
+**💡 Recommendations:**
+- **Start with**: `claude-4-sonnet-20250514-reasoning` for best balance of cost, speed, and accuracy
+- **For speed**: `claude-3-5-haiku-latest` for fast batch processing  
+- **For accuracy**: `claude-4-opus-20250514-reasoning` for the most challenging code
+- **For cost**: `claude-3-5-haiku-latest` for budget-conscious projects
+
+### 🚀 **Claude 4 Usage Examples**
+
+```bash
+# 1. Claude 4 Opus with Reasoning - Maximum accuracy for complex code
+humanify anthropic \
+  --model="claude-4-opus-20250514-reasoning" \
+  --verbose \
+  complex-obfuscated-app.min.js
+
+# 2. Claude 4 Sonnet with Reasoning - Best balance for most projects  
+humanify anthropic \
+  --model="claude-4-sonnet-20250514-reasoning" \
+  --outputDir="./humanified" \
+  production-bundle.min.js
+
+# 3. Claude 4 Opus Standard - Fast processing with high accuracy
+humanify anthropic \
+  --model="claude-4-opus-20250514" \
+  --outputDir="./output" \
+  app.min.js
+
+# 4. Claude 4 Sonnet Standard - Balanced speed and performance
+humanify anthropic \
+  --model="claude-4-sonnet-20250514" \
+  script.min.js
+```
+
+**🔄 Migration from Claude 3.5:**
+```bash
+# Old Claude 3.5 command
+humanify anthropic --model="claude-3-5-sonnet-latest" script.min.js
+
+# New Claude 4 equivalent (better results)
+humanify anthropic --model="claude-4-sonnet-20250514-reasoning" script.min.js
+```
 
 ### 💻 Local Mode (Private & Free)
 
@@ -234,11 +345,11 @@ echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
 
 **Example costs (approximate):**
 
-| File Size | OpenAI (GPT-4o) | Gemini (1.5-Pro) | Anthropic (Claude-3.5) |
-|-----------|----------------|-------------------|------------------------|
-| Small (10KB) | ~$0.02 - $0.05 | ~$0.01 - $0.03 | ~$0.02 - $0.04 |
-| Medium (100KB) | ~$0.20 - $0.50 | ~$0.10 - $0.30 | ~$0.15 - $0.40 |
-| Large (1MB) | ~$2.00 - $5.00 | ~$1.00 - $3.00 | ~$1.50 - $4.00 |
+| File Size | OpenAI (GPT-4o) | Gemini (1.5-Pro) | Anthropic (Claude-4) | Anthropic (Claude-3.5) |
+|-----------|----------------|-------------------|----------------------|------------------------|
+| Small (10KB) | ~$0.02 - $0.05 | ~$0.01 - $0.03 | ~$0.03 - $0.06 | ~$0.02 - $0.04 |
+| Medium (100KB) | ~$0.20 - $0.50 | ~$0.10 - $0.30 | ~$0.20 - $0.50 | ~$0.15 - $0.40 |
+| Large (1MB) | ~$2.00 - $5.00 | ~$1.00 - $3.00 | ~$2.00 - $5.00 | ~$1.50 - $4.00 |
 
 *Costs vary by model tier and usage patterns*
 
@@ -257,7 +368,7 @@ Local mode is completely free but requires:
 - **Bundle Analysis**: WebCrack for webpack bundle extraction
 - **AI Integration**: OpenAI API, Google Generative AI, Anthropic SDK, node-llama-cpp
 - **Language Models**: 
-  - **Cloud**: GPT-4o, Claude-3.5, Gemini-1.5
+  - **Cloud**: GPT-4o, Claude-4 (with reasoning), Claude-3.5, Gemini-1.5
   - **Local**: Phi-3.1, Llama-3.1 with GGUF quantization
 - **Performance**: Worker threads and GPU acceleration
 

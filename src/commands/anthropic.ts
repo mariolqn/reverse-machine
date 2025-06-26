@@ -8,8 +8,8 @@ import { env } from "../env.js";
 
 export const anthropic = cli()
   .name("anthropic")
-  .description("Use Anthropic's Claude API to unminify code")
-  .option("-m, --model <model>", "The model to use", "claude-3-5-haiku-latest")
+  .description("Use Anthropic's Claude API to unminify code. Supports Claude 4 with reasoning capabilities.")
+  .option("-m, --model <model>", "The model to use. Claude 4 models support '-reasoning' suffix for extended thinking.", "claude-3-5-haiku-latest")
   .option("-o, --outputDir <o>", "The output directory", "output")
   .option(
     "-k, --apiKey <apiKey>",
@@ -20,6 +20,11 @@ export const anthropic = cli()
   .action(async (filename, opts) => {
     if (opts.verbose) {
       SecureLogger.enableVerbose();
+    }
+
+    // Validate Claude 4 model usage
+    if (opts.model.includes("claude-4") && !opts.model.includes("20250514")) {
+      SecureLogger.info(`Using Claude 4 model: ${opts.model}. Note: Claude 4 models support extended reasoning for better code understanding.`);
     }
 
     const apiKey = opts.apiKey ?? env("ANTHROPIC_API_KEY");

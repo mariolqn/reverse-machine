@@ -1,0 +1,10 @@
+{
+  "moderate": false,
+  "allowlist": [],
+  "summary": true,
+  "output-format": "text",
+  "pass-enoaudit": true,
+  "show-found": true,
+  "show-not-found": false,
+  "registry": "https://registry.npmjs.org/"
+} 

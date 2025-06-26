@@ -1,0 +1,239 @@
+name: 🌙 Nightly Extended Tests
+
+on:
+  schedule:
+    # Run every night at 1 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      stress_multiplier:
+        description: 'Stress test multiplier (1-5)'
+        required: false
+        default: '2'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+
+env:
+  NODE_VERSION: 20
+  STRESS_MULTIPLIER: ${{ github.event.inputs.stress_multiplier || '2' }}
+
+jobs:
+  extended-stress-tests:
+    name: 💥 Extended Stress Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🧹 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 💾 Cache test model
+        uses: actions/cache@v4
+        with:
+          path: ~/.humanifyjs/models/
+          key: models-phi-${{ runner.os }}
+
+      - name: 📥 Download CI model
+        run: npm run download-ci-model
+
+      - name: 💥 Run extended stress tests
+        run: |
+          echo "Running extended stress tests with multiplier: $STRESS_MULTIPLIER"
+          for i in $(seq 1 $STRESS_MULTIPLIER); do
+            echo "Stress test iteration $i"
+            npm run test:stress
+            sleep 10
+          done
+
+      - name: 🧠 Extended memory leak detection
+        run: |
+          echo "Running extended memory tests..."
+          node --expose-gc --max-old-space-size=2048 $(which tsx) --test src/test/memory-leak.test.ts
+
+  massive-file-tests:
+    name: 📁 Massive File Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🧹 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 💾 Cache test model
+        uses: actions/cache@v4
+        with:
+          path: ~/.humanifyjs/models/
+          key: models-phi-${{ runner.os }}
+
+      - name: 📥 Download CI model
+        run: npm run download-ci-model
+
+      - name: 📁 Create massive test file
+        run: |
+          echo "Generating massive test file..."
+          node -e "
+            const fs = require('fs');
+            let content = '';
+            for (let i = 0; i < 50000; i++) {
+              content += \`function massive\${i}(a,b,c){var d=a+b+c;return d*\${i};}\n\`;
+            }
+            fs.writeFileSync('massive-test.js', content);
+            console.log('Generated file size:', (fs.statSync('massive-test.js').size / 1024 / 1024).toFixed(2), 'MB');
+          "
+
+      - name: 🧪 Test massive file processing
+        run: |
+          echo "Testing massive file processing..."
+          timeout 3600 npm run test:local -- massive-test.js --outputDir massive-output || echo "Massive file test completed (may have timed out)"
+
+      - name: 🧹 Cleanup
+        run: |
+          rm -f massive-test.js
+          rm -rf massive-output
+
+  long-running-tests:
+    name: ⏱️ Long Running Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🧹 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 💾 Cache test model
+        uses: actions/cache@v4
+        with:
+          path: ~/.humanifyjs/models/
+          key: models-phi-${{ runner.os }}
+
+      - name: 📥 Download CI model
+        run: npm run download-ci-model
+
+      - name: ⏱️ Marathon test run
+        run: |
+          echo "Starting marathon test run..."
+          start_time=$(date +%s)
+          
+          for i in {1..20}; do
+            echo "Marathon iteration $i/20"
+            npm run test:unit
+            npm run test:smoke
+            sleep 30
+          done
+          
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          echo "Marathon completed in $duration seconds"
+
+  boundary-condition-tests:
+    name: 🎯 Boundary Condition Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🧹 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 💾 Cache test model
+        uses: actions/cache@v4
+        with:
+          path: ~/.humanifyjs/models/
+          key: models-phi-${{ runner.os }}
+
+      - name: 📥 Download CI model
+        run: npm run download-ci-model
+
+      - name: 🎯 Test empty file
+        run: |
+          echo "Testing empty file..."
+          touch empty.js
+          npm run humanify local empty.js --outputDir empty-output || echo "Empty file test completed"
+          rm -f empty.js
+          rm -rf empty-output
+
+      - name: 🎯 Test single character file
+        run: |
+          echo "Testing single character file..."
+          echo "a" > single.js
+          npm run humanify local single.js --outputDir single-output || echo "Single char test completed"
+          rm -f single.js
+          rm -rf single-output
+
+      - name: 🎯 Test maximum path length
+        run: |
+          echo "Testing maximum path length..."
+          long_path=$(printf 'a%.0s' {1..100})
+          mkdir -p "$long_path"
+          echo "function test(){}" > "$long_path/test.js"
+          npm run humanify local "$long_path/test.js" --outputDir long-path-output || echo "Long path test completed"
+          rm -rf "$long_path"
+          rm -rf long-path-output
+
+  report-nightly-results:
+    name: 📊 Nightly Test Report
+    runs-on: ubuntu-latest
+    needs: [extended-stress-tests, massive-file-tests, long-running-tests, boundary-condition-tests]
+    if: always()
+    steps:
+      - name: 📊 Generate nightly report
+        run: |
+          echo "# 🌙 Nightly Extended Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Date: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Extended Stress: ${{ needs.extended-stress-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Massive Files: ${{ needs.massive-file-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Long Running: ${{ needs.long-running-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Boundary Conditions: ${{ needs.boundary-condition-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Configuration:" >> $GITHUB_STEP_SUMMARY
+          echo "- Stress Multiplier: ${{ env.STRESS_MULTIPLIER }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Node Version: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY 

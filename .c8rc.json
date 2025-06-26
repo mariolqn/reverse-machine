@@ -1,0 +1,33 @@
+{
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.e2etest.ts",
+    "src/**/*.llmtest.ts",
+    "src/**/*.openaitest.ts",
+    "src/**/*.geminitest.ts",
+    "src/**/*.perftest.ts",
+    "src/**/*.stress.ts",
+    "src/test/**/*",
+    "dist/**/*",
+    "coverage/**/*"
+  ],
+  "reporter": [
+    "text",
+    "text-summary", 
+    "html",
+    "lcov",
+    "json-summary"
+  ],
+  "all": true,
+  "check-coverage": true,
+  "lines": 70,
+  "functions": 70,
+  "branches": 60,
+  "statements": 70,
+  "exclude-after-remap": false,
+  "skip-full": false
+} 
