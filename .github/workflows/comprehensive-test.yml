@@ -185,7 +185,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -222,7 +222,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -261,7 +261,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -300,7 +300,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model

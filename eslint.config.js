@@ -1,16 +1,16 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
-import unusedImports from "eslint-plugin-unused-imports";
+import eslintGlobals from "globals";
+import eslintJsPlugin from "@eslint/js";
+import typescriptEslintPlugin from "typescript-eslint";
+import eslintUnusedImportsPlugin from "eslint-plugin-unused-imports";
 
 export default [
   { files: ["**/*.{js,mjs,cjs,ts}"] },
-  { languageOptions: { globals: globals.browser } },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
+  { languageOptions: { globals: eslintGlobals.browser } },
+  eslintJsPlugin.configs.recommended,
+  ...typescriptEslintPlugin.configs.recommended,
   {
     plugins: {
-      "unused-imports": unusedImports
+      "unused-imports": eslintUnusedImportsPlugin,
     },
     rules: {
       "no-control-regex": "off", // This is fine, we'll (ab)use regexes a lot
@@ -22,10 +22,10 @@ export default [
           vars: "all",
           varsIgnorePattern: "^_",
           args: "after-used",
-          argsIgnorePattern: "^_"
-        }
-      ]
-    }
+          argsIgnorePattern: "^_",
+        },
+      ],
+    },
   },
   {
     languageOptions: {
@@ -37,22 +37,25 @@ export default [
         Buffer: "readonly",
         global: "readonly",
         __dirname: "readonly",
-        __filename: "readonly"
-      }
+        __filename: "readonly",
+      },
     },
     rules: {
       "no-undef": "error",
       "no-unused-vars": "warn",
-      "@typescript-eslint/no-explicit-any": ["error", {
-        "ignoreRestArgs": true,
-        "fixToUnknown": false
-      }]
-    }
+      "@typescript-eslint/no-explicit-any": [
+        "error",
+        {
+          ignoreRestArgs: true,
+          fixToUnknown: false,
+        },
+      ],
+    },
   },
   {
     files: ["src/security/**/*", "src/plugins/**/*", "src/commands/**/*"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off"
-    }
-  }
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ];

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { writeFile, rm, readFile } from "node:fs/promises";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 
 const OUTPUT_DIR = "compatibility-test-output";
 
@@ -25,7 +25,7 @@ var e = {
   await writeFile(es5File, es5Code);
 
   try {
-    await humanify("openai", es5File, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", es5File, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.includes("function"), "Should handle ES5 syntax");
   } finally {
@@ -49,7 +49,7 @@ const {n, o} = {n: 3, o: 4};
   await writeFile(es6File, es6Code);
 
   try {
-    await humanify("openai", es6File, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", es6File, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle ES6+ features");
   } finally {
@@ -71,7 +71,7 @@ exports.e = function(f) { return f * 2; };
   await writeFile(cjsFile, cjsCode);
 
   try {
-    await humanify("openai", cjsFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", cjsFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(
       output.includes("require") || output.includes("module"),
@@ -100,7 +100,7 @@ function d(e) {
   await writeFile(templateFile, templateCode);
 
   try {
-    await humanify("openai", templateFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", templateFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle template literals");
   } finally {
@@ -128,7 +128,7 @@ const d = async (e) => {
   await writeFile(asyncFile, asyncCode);
 
   try {
-    await humanify("openai", asyncFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", asyncFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(
       output.includes("async") || output.includes("await"),
@@ -156,7 +156,7 @@ const d = function*(e) {
   await writeFile(genFile, genCode);
 
   try {
-    await humanify("openai", genFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", genFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(
       output.includes("function*") || output.includes("yield"),
@@ -183,7 +183,7 @@ const c = {
   await writeFile(symbolFile, symbolCode);
 
   try {
-    await humanify("openai", symbolFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", symbolFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle symbols");
   } finally {
@@ -208,7 +208,7 @@ const d = new Proxy(a, {
   await writeFile(proxyFile, proxyCode);
 
   try {
-    await humanify("openai", proxyFile, "--outputDir", OUTPUT_DIR);
+    await reverseMachine("openai", proxyFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(
       output.includes("Proxy") || output.includes("Reflect"),

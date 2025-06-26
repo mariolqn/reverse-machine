@@ -3,7 +3,7 @@ import { readFile, rm } from "node:fs/promises";
 import { testPrompt } from "./test-prompt.js";
 // Note: GBNF functionality removed with local models
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 
 const TEST_OUTPUT_DIR = "test-output";
 
@@ -31,7 +31,7 @@ test("Unminifies an example file successfully", async () => {
     await fileIsMinified(`fixtures/example.min.js`)
   );
 
-  await humanify(
+      await reverseMachine(
     "gemini",
     "fixtures/example.min.js",
     "--verbose",

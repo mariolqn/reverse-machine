@@ -1,24 +1,23 @@
-# HumanifyJS
+# Reverse Machine
 
 **Next-generation JavaScript deobfuscation powered by AI**
 
-[![npm version](https://badge.fury.io/js/humanifyjs.svg)](https://www.npmjs.com/package/humanifyjs)
+[![npm version](https://badge.fury.io/js/reverse-machine.svg)](https://www.npmjs.com/package/reverse-machine)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Transform minified, obfuscated, and bundled JavaScript into human-readable code using Large Language Models and advanced AST transformations.
 
-## 🚀 What Makes HumanifyJS Different
+## 🚀 What Makes Reverse Machine Different
 
-HumanifyJS represents a paradigm shift in JavaScript reverse engineering. Unlike traditional tools that rely solely on pattern matching and heuristics, HumanifyJS leverages the contextual understanding of Large Language Models to intelligently rename variables and functions while maintaining 100% semantic equivalence through AST-level transformations.
+Reverse Machine represents a paradigm shift in JavaScript reverse engineering. Unlike traditional tools that rely solely on pattern matching and heuristics, Reverse Machine leverages the contextual understanding of Large Language Models to intelligently rename variables and functions while maintaining 100% semantic equivalence through AST-level transformations.
 
 ### ✨ Key Features
 
-- **🧠 AI-Powered Renaming**: Context-aware variable and function renaming using OpenAI GPT, Google Gemini, or local LLMs
+- **🧠 AI-Powered Renaming**: Context-aware variable and function renaming using OpenAI GPT, Google Gemini, or Anthropic Claude
 - **🔧 AST-Level Transformations**: Babel-powered structural improvements while preserving code semantics
 - **📦 Bundle Unpacking**: Automatic webpack bundle extraction using WebCrack
 - **⚡ Parallel Processing**: Concurrent file processing for optimal performance
-- **🎯 Local GPU Support**: Native Apple Silicon optimization and CUDA support
-- **🔒 Privacy-First**: Complete offline processing with local models
+- **🔒 Multi-Input Support**: Process single files, entire directories, or ZIP archives
 - **🎨 Smart Formatting**: Integrated Prettier for consistent code style
 
 ## 📊 Before & After
@@ -53,43 +52,74 @@ function splitStringIntoChunks(inputString, chunkSize) {
 
 ### Global Installation (Recommended)
 ```bash
-npm install -g humanifyjs
+npm install -g reverse-machine
 ```
 
 ### One-time Usage
 ```bash
-npx humanifyjs [command] [options] <file>
+npx reverse-machine [command] [options] <input>
 ```
 
 ## 📖 Usage Guide
 
 ### Command Overview
 
-HumanifyJS offers three processing modes, each optimized for different use cases:
+Reverse Machine offers three AI-powered processing modes, each optimized for different use cases and supports multiple input types:
 
 ```bash
-humanify <mode> [options] <input-file>
+reverse-machine <mode> [options] <input>
 ```
+
+### 📁 Input Types
+
+Reverse Machine supports three input types with intelligent output handling:
+
+#### Single Files
+```bash
+reverse-machine openai script.min.js
+# Creates: script.min - Deobfuscated.js (in same directory)
+```
+
+#### Project Directories  
+```bash
+reverse-machine openai ./my-project
+# Creates: ./my-project-deobfuscated/ (copy of entire project with all JS/TS files processed)
+```
+
+#### ZIP Archives
+```bash
+reverse-machine openai project.zip
+# Creates: ./project-deobfuscated/ (extracts and processes all files)
+```
+
+**Supported file types for processing:**
+- JavaScript: `.js`, `.jsx`, `.mjs`, `.cjs`
+- TypeScript: `.ts`, `.tsx`
+- HTML files with inline scripts: `.html`, `.htm`
+- Component files: `.vue`, `.svelte`
+- Configuration files: `.json` (if minified)
 
 ### 🤖 OpenAI Mode (Most Accurate)
 
 Leverage OpenAI's GPT models for superior renaming accuracy:
 
 ```bash
-# Using API key directly
-humanify openai --apiKey="sk-your-key" script.min.js
+# Process a single minified file
+reverse-machine openai --apiKey="sk-your-key" script.min.js
 
-# Using environment variable
+# Process an entire project directory
 export OPENAI_API_KEY="sk-your-key"
-humanify openai script.min.js
+reverse-machine openai ./my-obfuscated-project
 
-# Advanced options
-humanify openai \
+# Process a ZIP archive
+reverse-machine openai obfuscated-app.zip
+
+# Advanced options for any input type
+reverse-machine openai \
   --model="gpt-4o" \
-  --outputDir="./humanified" \
   --concurrency=8 \
   --verbose \
-  script.min.js
+  input-file-or-directory
 ```
 
 **Environment Variables:**
@@ -100,12 +130,15 @@ humanify openai \
 Use Google's Gemini models for cost-effective processing:
 
 ```bash
-# Using API key directly
-humanify gemini --apiKey="your-gemini-key" script.min.js
+# Process a single file
+reverse-machine gemini --apiKey="your-gemini-key" script.min.js
 
-# Using environment variable
+# Process a project directory
 export GEMINI_API_KEY="your-gemini-key"
-humanify gemini --model="gemini-1.5-pro" script.min.js
+reverse-machine gemini --model="gemini-1.5-pro" ./my-project
+
+# Process a ZIP archive
+reverse-machine gemini obfuscated-bundle.zip
 ```
 
 **Environment Variables:**
@@ -116,28 +149,26 @@ humanify gemini --model="gemini-1.5-pro" script.min.js
 Use Anthropic's Claude models for superior code understanding:
 
 ```bash
-# Using API key directly with Claude 4 reasoning
-humanify anthropic --apiKey="your-anthropic-key" --model="claude-4-opus-20250514-reasoning" script.min.js
+# Process a single file with Claude 4 reasoning
+reverse-machine anthropic --apiKey="your-anthropic-key" --model="claude-4-opus-20250514-reasoning" script.min.js
 
-# Using environment variable with Claude 4 fast mode
+# Process a project directory with environment variable
 export ANTHROPIC_API_KEY="your-anthropic-key"
-humanify anthropic --model="claude-4-sonnet-20250514" script.min.js
+reverse-machine anthropic --model="claude-4-sonnet-20250514" ./my-project
 
-# Claude 3.5 compatibility
-humanify anthropic --model="claude-3-5-sonnet-latest" script.min.js
+# Process a ZIP archive with Claude 3.5
+reverse-machine anthropic --model="claude-3-5-sonnet-latest" obfuscated-app.zip
 
 # Advanced options with Claude 4 reasoning model
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-opus-20250514-reasoning" \
-  --outputDir="./humanified" \
   --verbose \
-  script.min.js
+  input-file-or-directory
 
 # Fast processing with Claude 4 standard model  
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-sonnet-20250514" \
-  --outputDir="./humanified" \
-  script.min.js
+  complex-project.zip
 ```
 
 **Available Anthropic Models:**
@@ -184,11 +215,11 @@ Claude 4 introduces revolutionary reasoning capabilities that dramatically impro
 
 ```bash
 # Standard Claude 4 (fast)
-humanify anthropic --model="claude-4-sonnet-20250514" app.min.js
+reverse-machine anthropic --model="claude-4-sonnet-20250514" app.min.js
 # Result: Variables renamed in ~2-3 seconds with good accuracy
 
 # Claude 4 with Reasoning (thorough)  
-humanify anthropic --model="claude-4-sonnet-20250514-reasoning" app.min.js
+reverse-machine anthropic --model="claude-4-sonnet-20250514-reasoning" app.min.js
 # Result: Variables renamed in ~5-8 seconds with superior accuracy and context awareness
 ```
 
@@ -220,84 +251,43 @@ The reasoning models will internally analyze:
 
 ```bash
 # 1. Claude 4 Opus with Reasoning - Maximum accuracy for complex code
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-opus-20250514-reasoning" \
   --verbose \
   complex-obfuscated-app.min.js
 
 # 2. Claude 4 Sonnet with Reasoning - Best balance for most projects  
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-sonnet-20250514-reasoning" \
-  --outputDir="./humanified" \
-  production-bundle.min.js
+  ./production-project
 
 # 3. Claude 4 Opus Standard - Fast processing with high accuracy
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-opus-20250514" \
-  --outputDir="./output" \
-  app.min.js
+  app-bundle.zip
 
 # 4. Claude 4 Sonnet Standard - Balanced speed and performance
-humanify anthropic \
+reverse-machine anthropic \
   --model="claude-4-sonnet-20250514" \
-  script.min.js
+  ./entire-codebase
 ```
 
 **🔄 Migration from Claude 3.5:**
 ```bash
 # Old Claude 3.5 command
-humanify anthropic --model="claude-3-5-sonnet-latest" script.min.js
+reverse-machine anthropic --model="claude-3-5-sonnet-latest" script.min.js
 
 # New Claude 4 equivalent (better results)
-humanify anthropic --model="claude-4-sonnet-20250514-reasoning" script.min.js
+reverse-machine anthropic --model="claude-4-sonnet-20250514-reasoning" script.min.js
 ```
 
-### 💻 Local Mode (Private & Free)
 
-Process files entirely offline using local LLMs:
-
-```bash
-# First-time setup: download a model
-humanify download 2b    # 4GB Phi-3.1 model (recommended for most users)
-humanify download 8b    # 5GB Llama-3.1 model (better accuracy, requires more RAM)
-
-# Process files locally
-humanify local script.min.js
-
-# Advanced local processing
-humanify local \
-  --model="8b" \
-  --outputDir="./output" \
-  --seed=42 \
-  --verbose \
-  script.min.js
-```
-
-### Available Local Models
-
-| Model | Size | Architecture | RAM Required | Best For |
-|-------|------|-------------|--------------|----------|
-| `2b` | 4GB | Phi-3.1-mini | 8GB+ | General use, faster processing |
-| `8b` | 5GB | Llama-3.1 | 16GB+ | Higher accuracy, complex code |
-
-### 📊 Model Management
-
-```bash
-# List available models
-humanify download
-
-# Download specific model
-humanify download 2b
-
-# Check model status
-ls ~/.humanifyjs/models/
-```
 
 ## ⚙️ Advanced Configuration
 
 ### Processing Pipeline
 
-HumanifyJS uses a sophisticated 4-stage pipeline:
+Reverse Machine uses a sophisticated 4-stage pipeline:
 
 1. **🔓 Bundle Extraction**: WebCrack unpacks webpack bundles
 2. **🔧 AST Transformations**: Babel plugins normalize code structure
@@ -309,27 +299,44 @@ HumanifyJS uses a sophisticated 4-stage pipeline:
 #### Parallel Processing
 ```bash
 # Adjust concurrency based on your system
-humanify openai --concurrency=16 large-bundle.js  # High-end systems
-humanify openai --concurrency=4 large-bundle.js   # Standard systems
+reverse-machine openai --concurrency=16 ./large-project  # High-end systems
+reverse-machine openai --concurrency=4 single-file.js    # Standard systems
+
+# For directories with many files, higher concurrency helps
+reverse-machine openai --concurrency=12 project.zip      # Process ZIP archives faster
 ```
 
-#### GPU Acceleration (Local Mode)
-```bash
-# Enable GPU acceleration (default)
-humanify local script.min.js
 
-# Force CPU-only processing
-humanify local --disableGpu script.min.js
-```
 
 ### Output Structure
 
+The output structure depends on your input type:
+
+#### Single File Input
 ```
-output/
-├── deobfuscated.js         # Main processed file
-├── chunk-[hash].js         # Extracted chunks
-├── vendor-[hash].js        # Vendor bundles
-└── ...                     # Additional extracted files
+original-directory/
+├── script.min.js                    # Original file
+└── script.min - Deobfuscated.js    # Processed output
+```
+
+#### Directory Input
+```
+parent-directory/
+├── my-project/                      # Original directory
+└── my-project-deobfuscated/         # Processed copy
+    ├── src/
+    │   ├── app.js                   # All JS/TS files processed
+    │   └── utils.ts                 # Maintains file structure
+    ├── assets/                      # Non-JS files copied as-is
+    └── package.json                 # Configuration preserved
+```
+
+#### ZIP Archive Input
+```
+archive-directory/
+├── project.zip                      # Original archive
+└── project-deobfuscated/            # Extracted and processed
+    └── (same structure as directory input)
 ```
 
 ## 💰 Cost Estimation
@@ -339,8 +346,11 @@ output/
 For cost planning with cloud providers:
 
 ```bash
-# Estimate tokens for OpenAI/Gemini/Anthropic
+# Estimate tokens for a single file
 echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
+
+# For directories, costs multiply by number of processable files
+find ./my-project -name "*.js" -o -name "*.ts" | wc -l  # Count files that will be processed
 ```
 
 **Example costs (approximate):**
@@ -353,12 +363,8 @@ echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
 
 *Costs vary by model tier and usage patterns*
 
-### Local Processing
-
-Local mode is completely free but requires:
-- **Initial download**: 4-5GB per model
-- **Processing time**: 2-10x slower than cloud APIs
-- **Hardware**: GPU recommended for acceptable speed
+**📁 Directory Processing Costs:**
+When processing directories or ZIP archives, costs are **multiplied by the number of processable files**. For example, a project with 50 JavaScript files would cost 50x the single file rate.
 
 ## 🔧 Technical Architecture
 
@@ -366,15 +372,13 @@ Local mode is completely free but requires:
 
 - **AST Processing**: Babel ecosystem for semantic-preserving transformations
 - **Bundle Analysis**: WebCrack for webpack bundle extraction
-- **AI Integration**: OpenAI API, Google Generative AI, Anthropic SDK, node-llama-cpp
-- **Language Models**: 
-  - **Cloud**: GPT-4o, Claude-4 (with reasoning), Claude-3.5, Gemini-1.5
-  - **Local**: Phi-3.1, Llama-3.1 with GGUF quantization
-- **Performance**: Worker threads and GPU acceleration
+- **AI Integration**: OpenAI API, Google Generative AI, Anthropic SDK
+- **Language Models**: GPT-4o, Claude-4 (with reasoning), Claude-3.5, Gemini-1.5
+- **Performance**: Parallel processing and concurrent file handling
 
 ### Babel Transformations
 
-HumanifyJS includes custom Babel plugins for:
+Reverse Machine includes custom Babel plugins for:
 
 - Converting `void 0` → `undefined`
 - Normalizing comparison operators (`5 === x` → `x === 5`)
@@ -388,11 +392,11 @@ The tool uses sophisticated prompting strategies:
 - **Context-aware analysis**: Provides surrounding code context to LLMs
 - **Incremental processing**: Processes variables in scope-aware batches
 - **Conflict resolution**: Automatically handles naming conflicts
-- **Grammar constraints**: Uses GBNF for structured local model output
+- **Structured output**: Uses JSON formatting for consistent AI responses
 
 ## 🧪 Testing & Quality Assurance
 
-HumanifyJS includes comprehensive test suites:
+Reverse Machine includes comprehensive test suites:
 
 ```bash
 # Run all tests
@@ -414,8 +418,8 @@ We welcome contributions! The codebase is designed for maintainability:
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/humanifyjs.git
-cd humanifyjs
+git clone https://github.com/yourusername/reverse-machine.git
+cd reverse-machine
 npm install
 
 # Development commands
@@ -430,10 +434,12 @@ npm run lint           # Code quality checks
 src/
 ├── commands/          # CLI command implementations
 ├── plugins/           # Processing plugins (Babel, LLM, etc.)
+├── security/          # Input validation and security
 ├── test/             # Test suites
 ├── babel-utils.ts    # AST transformation utilities
-├── unminify.ts       # Core processing pipeline
-└── local-models.ts   # Model management
+├── input-handler.ts  # Multi-input type handling (files/dirs/zip)
+├── unminify.ts       # Legacy processing pipeline
+└── unminify-enhanced.ts # Enhanced processing pipeline
 ```
 
 ## 📄 License
@@ -444,13 +450,13 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 - **WebCrack** team for bundle extraction capabilities
 - **Babel** ecosystem for AST transformations
-- **node-llama-cpp** for local LLM inference
-- **OpenAI** and **Google** for cloud AI APIs
+- **OpenAI**, **Google**, and **Anthropic** for AI APIs
+- **Open source community** for the foundational tools
 
 ## 📞 Support & Community
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/humanifyjs/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/humanifyjs/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/reverse-machine/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/reverse-machine/discussions)
 - **Blog**: [Introduction Blog Post](https://thejunkland.com/blog/using-llms-to-reverse-javascript-minification)
 
 ---
@@ -459,6 +465,6 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 **Made with ❤️ for the reverse engineering community**
 
-[⭐ Star on GitHub](https://github.com/yourusername/humanifyjs) • [📦 npm Package](https://www.npmjs.com/package/humanifyjs) • [📖 Documentation](https://github.com/yourusername/humanifyjs/wiki)
+[⭐ Star on GitHub](https://github.com/yourusername/reverse-machine) • [📦 npm Package](https://www.npmjs.com/package/reverse-machine) • [📖 Documentation](https://github.com/yourusername/reverse-machine/wiki)
 
 </div>

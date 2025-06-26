@@ -1,5 +1,5 @@
 {
-  "name": "humanifyjs",
+  "name": "reverse-machine",
   "version": "2.1.2",
   "description": "",
   "main": "dist/index.mjs",
@@ -37,11 +37,11 @@
     "lint:eslint": "eslint src/* src/**/*"
   },
   "bin": {
-    "humanify": "dist/index.mjs"
+    "reverse-machine": "dist/index.mjs"
   },
   "type": "module",
   "keywords": [
-    "humanify",
+    "reverse-machine",
     "decompiler",
     "decompile",
     "unobfuscate",

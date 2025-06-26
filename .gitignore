@@ -58,7 +58,7 @@ logs/
 *.log
 
 # Runtime
-.humanifyjs/
+.reverse-machine/
 models/
 
 # Temporary files

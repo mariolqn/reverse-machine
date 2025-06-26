@@ -46,7 +46,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -89,7 +89,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -141,7 +141,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -185,7 +185,7 @@ jobs:
       - name: 💾 Cache test model
         uses: actions/cache@v4
         with:
-          path: ~/.humanifyjs/models/
+          path: ~/.reverse-machine/models/
           key: models-phi-${{ runner.os }}
 
       - name: 📥 Download CI model
@@ -195,7 +195,7 @@ jobs:
         run: |
           echo "Testing empty file..."
           touch empty.js
-          npm run humanify local empty.js --outputDir empty-output || echo "Empty file test completed"
+          npm run reverse-machine local empty.js --outputDir empty-output || echo "Empty file test completed"
           rm -f empty.js
           rm -rf empty-output
 
@@ -203,7 +203,7 @@ jobs:
         run: |
           echo "Testing single character file..."
           echo "a" > single.js
-          npm run humanify local single.js --outputDir single-output || echo "Single char test completed"
+          npm run reverse-machine local single.js --outputDir single-output || echo "Single char test completed"
           rm -f single.js
           rm -rf single-output
 
@@ -213,7 +213,7 @@ jobs:
           long_path=$(printf 'a%.0s' {1..100})
           mkdir -p "$long_path"
           echo "function test(){}" > "$long_path/test.js"
-          npm run humanify local "$long_path/test.js" --outputDir long-path-output || echo "Long path test completed"
+          npm run reverse-machine local "$long_path/test.js" --outputDir long-path-output || echo "Long path test completed"
           rm -rf "$long_path"
           rm -rf long-path-output
 

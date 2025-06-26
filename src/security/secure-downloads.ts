@@ -55,7 +55,7 @@ export class SecureDownloader {
       response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "User-Agent": "HumanifyJS/2.1.2 (Security-Enhanced)",
+          "User-Agent": "ReverseMachine/2.1.2 (Security-Enhanced)",
           Accept: allowedTypes.join(", "),
           "Cache-Control": "no-cache"
         },

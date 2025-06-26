@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 import { writeFile, rm } from "node:fs/promises";
 
 const TEST_FILE = "memory-test.js";
@@ -32,7 +32,7 @@ test("Memory: OpenAI processing doesn't leak memory", { skip: !process.env.OPENA
 
   // Run fewer iterations to reduce system stress
   for (let i = 0; i < 2; i++) {
-    await humanify("openai", TEST_FILE, "--outputDir", "memory-test-output");
+    await reverseMachine("openai", TEST_FILE, "--outputDir", "memory-test-output");
 
     // Force garbage collection if available
     if (global.gc) {
@@ -53,7 +53,7 @@ test("Memory: OpenAI processing doesn't leak memory", { skip: !process.env.OPENA
 test("Memory: RSS memory stays within bounds", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const initialRSS = process.memoryUsage().rss;
 
-  await humanify("openai", TEST_FILE, "--outputDir", "memory-test-output");
+  await reverseMachine("openai", TEST_FILE, "--outputDir", "memory-test-output");
 
   const finalRSS = process.memoryUsage().rss;
   const rssIncrease = finalRSS - initialRSS;
@@ -68,7 +68,7 @@ test("Memory: RSS memory stays within bounds", { skip: !process.env.OPENAI_API_K
 test("Memory: External memory stays reasonable", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const initialExternal = process.memoryUsage().external;
 
-  await humanify("openai", TEST_FILE, "--outputDir", "memory-test-output");
+  await reverseMachine("openai", TEST_FILE, "--outputDir", "memory-test-output");
 
   const finalExternal = process.memoryUsage().external;
   const externalIncrease = finalExternal - initialExternal;

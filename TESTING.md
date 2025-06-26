@@ -203,10 +203,10 @@ test("My function should do something", () => {
 // src/test/my-integration.test.ts
 import test from "node:test";
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 
 test("Integration: My workflow", async () => {
-  const result = await humanify("local", "test.js");
+  const result = await reverseMachine("local", "test.js");
   assert(result.stdout.includes("Success"));
 });
 ```

@@ -6,9 +6,9 @@ import { gemini } from "./commands/gemini.js";
 import { anthropic } from "./commands/anthropic.js";
 
 cli()
-  .name("humanify")
+  .name("reverse-machine")
   .description(
-    "Unminify code using OpenAI's API, Anthropic's Claude, or Google's Gemini"
+    "Deobfuscate JavaScript code using AI. Supports single files, project directories, and ZIP archives."
   )
   .version(version)
   .addCommand(openai)

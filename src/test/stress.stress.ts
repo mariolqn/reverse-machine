@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 import { writeFile, rm } from "node:fs/promises";
 
 const STRESS_OUTPUT_DIR = "stress-test-output";
@@ -35,7 +35,7 @@ function stress${i}(a, b, c, d, e) {
 
   try {
     // This should either succeed or fail gracefully
-            await humanify("openai", largeFile, "--outputDir", STRESS_OUTPUT_DIR);
+            await reverseMachine("openai", largeFile, "--outputDir", STRESS_OUTPUT_DIR);
     console.log("Large file stress test passed");
   } catch (error) {
     // If it fails, it should be a graceful failure with meaningful error
@@ -70,7 +70,7 @@ test("Stress: Deeply nested code", async () => {
   await writeFile(nestedFile, nestedCode);
 
   try {
-    await humanify("openai", nestedFile, "--outputDir", STRESS_OUTPUT_DIR);
+    await reverseMachine("openai", nestedFile, "--outputDir", STRESS_OUTPUT_DIR);
     console.log("Nested code stress test passed");
   } catch (error) {
     assert(
@@ -98,7 +98,7 @@ test("Stress: Many variables and functions", async () => {
   await writeFile(manyVarsFile, code);
 
   try {
-    await humanify("openai", manyVarsFile, "--outputDir", STRESS_OUTPUT_DIR);
+    await reverseMachine("openai", manyVarsFile, "--outputDir", STRESS_OUTPUT_DIR);
     console.log("Many variables stress test passed");
   } catch (error) {
     assert(error instanceof Error, "Should handle many variables gracefully");
@@ -128,7 +128,7 @@ function a(b, c, d) {
   await writeFile(regexFile, complexCode);
 
   try {
-    await humanify("openai", regexFile, "--outputDir", STRESS_OUTPUT_DIR);
+    await reverseMachine("openai", regexFile, "--outputDir", STRESS_OUTPUT_DIR);
     console.log("Complex regex stress test passed");
   } catch (error) {
     assert(error instanceof Error, "Should handle complex regex gracefully");
@@ -161,7 +161,7 @@ const νξο = {
   await writeFile(unicodeFile, unicodeCode);
 
   try {
-    await humanify("openai", unicodeFile, "--outputDir", STRESS_OUTPUT_DIR);
+    await reverseMachine("openai", unicodeFile, "--outputDir", STRESS_OUTPUT_DIR);
     console.log("Unicode stress test passed");
   } catch (error) {
     assert(error instanceof Error, "Should handle Unicode gracefully");

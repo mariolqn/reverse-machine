@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 import { writeFile, rm, readFile } from "node:fs/promises";
 import { performance } from "perf_hooks";
 
@@ -47,7 +47,7 @@ test.afterEach(async () => {
 test("Performance: Small file processing time", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const start = performance.now();
 
-  await humanify("openai", SMALL_TEST_FILE, "--outputDir", OUTPUT_DIR);
+      await reverseMachine("openai", SMALL_TEST_FILE, "--outputDir", OUTPUT_DIR);
 
   const end = performance.now();
   const duration = end - start;
@@ -60,7 +60,7 @@ test("Performance: Small file processing time", { skip: !process.env.OPENAI_API_
 test("Performance: Large file processing time", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const start = performance.now();
 
-  await humanify("openai", LARGE_TEST_FILE, "--outputDir", OUTPUT_DIR);
+  await reverseMachine("openai", LARGE_TEST_FILE, "--outputDir", OUTPUT_DIR);
 
   const end = performance.now();
   const duration = end - start;
@@ -86,7 +86,7 @@ test("Performance: Multiple small files", { skip: !process.env.OPENAI_API_KEY },
   // Process them all
   for (const file of files) {
     promises.push(
-      humanify("openai", file, "--outputDir", `${OUTPUT_DIR}-${file}`)
+      reverseMachine("openai", file, "--outputDir", `${OUTPUT_DIR}-${file}`)
     );
   }
 
@@ -107,7 +107,7 @@ test("Performance: Multiple small files", { skip: !process.env.OPENAI_API_KEY },
 });
 
 test("Performance: Output file quality check", { skip: !process.env.OPENAI_API_KEY }, async () => {
-  await humanify("openai", LARGE_TEST_FILE, "--outputDir", OUTPUT_DIR);
+  await reverseMachine("openai", LARGE_TEST_FILE, "--outputDir", OUTPUT_DIR);
 
   const outputContent = await readFile(
     `${OUTPUT_DIR}/deobfuscated.js`,
@@ -134,7 +134,7 @@ test("Performance: CLI startup time", async () => {
     const start = performance.now();
 
     try {
-      await humanify("--help");
+      await reverseMachine("--help");
     } catch {
       // Help command might exit with non-zero, that's okay
     }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 import { readFile, writeFile, rm, mkdir } from "node:fs/promises";
 import { join } from "path";
 
@@ -26,18 +26,18 @@ test.afterEach(async () => {
 });
 
 test("Smoke: CLI responds to --help", async () => {
-  const result = await humanify("--help");
-  assert(result.stdout.includes("humanify"), "Help should mention humanify");
+  const result = await reverseMachine("--help");
+  assert(result.stdout.includes("reverse-machine"), "Help should mention reverse-machine");
   assert(result.stdout.includes("Usage"), "Help should include usage");
 });
 
 test("Smoke: CLI responds to --version", async () => {
-  const result = await humanify("--version");
+  const result = await reverseMachine("--version");
   assert(result.stdout.trim().length > 0, "Version should not be empty");
 });
 
 test("Smoke: OpenAI command works with basic file", { skip: !process.env.OPENAI_API_KEY }, async () => {
-  const result = await humanify(
+  const result = await reverseMachine(
     "openai",
     TEST_INPUT_FILE,
     "--outputDir",
@@ -65,7 +65,7 @@ test("Smoke: OpenAI command works with basic file", { skip: !process.env.OPENAI_
 
 test("Smoke: Error handling for nonexistent file", async () => {
   await assert.rejects(
-    humanify("openai", "nonexistent-file.js"),
+    reverseMachine("openai", "nonexistent-file.js"),
     /Error/,
     "Should throw error for nonexistent file"
   );
@@ -73,14 +73,14 @@ test("Smoke: Error handling for nonexistent file", async () => {
 
 test("Smoke: Error handling for invalid command", async () => {
   await assert.rejects(
-    humanify("invalid-command"),
+    reverseMachine("invalid-command"),
     /Error/,
     "Should throw error for invalid command"
   );
 });
 
 test("Smoke: Verbose flag works", { skip: !process.env.OPENAI_API_KEY }, async () => {
-  const result = await humanify(
+  const result = await reverseMachine(
     "openai",
     TEST_INPUT_FILE,
     "--verbose",
@@ -93,7 +93,7 @@ test("Smoke: Verbose flag works", { skip: !process.env.OPENAI_API_KEY }, async (
 
 test("Smoke: Output directory creation", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const customOutputDir = "custom-smoke-output";
-  await humanify("openai", TEST_INPUT_FILE, "--outputDir", customOutputDir);
+  await reverseMachine("openai", TEST_INPUT_FILE, "--outputDir", customOutputDir);
 
   const outputFile = join(customOutputDir, "deobfuscated.js");
   const content = await readFile(outputFile, "utf-8");

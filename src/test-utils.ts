@@ -25,7 +25,7 @@ export function assertMatches(actual: string, expected: string[]) {
   );
 }
 
-export async function humanify(...argv: string[]) {
+export async function reverseMachine(...argv: string[]) {
   const process = spawn("./dist/index.mjs", argv);
   const stdout: string[] = [];
   const stderr: string[] = [];

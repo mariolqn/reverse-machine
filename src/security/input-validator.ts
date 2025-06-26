@@ -3,7 +3,9 @@ import fs from "fs";
 import { err } from "../cli-error.js";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-const ALLOWED_EXTENSIONS = [".js", ".mjs", ".min.js", ".ts"];
+const MAX_DIRECTORY_SIZE = 500 * 1024 * 1024; // 500MB for directories
+const ALLOWED_FILE_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".min.js"];
+const ALLOWED_ARCHIVE_EXTENSIONS = [".zip"];
 
 export class SecurityError extends Error {
   constructor(message: string) {
@@ -13,15 +15,15 @@ export class SecurityError extends Error {
 }
 
 /**
- * Validates input file path and prevents path traversal attacks
+ * Validates input path (file, directory, or ZIP) and prevents path traversal attacks
  */
-export function validateInputFile(filename: string): string {
-  if (!filename || typeof filename !== "string") {
-    throw new SecurityError("Invalid filename provided");
+export function validateInputFile(inputPath: string): string {
+  if (!inputPath || typeof inputPath !== "string") {
+    throw new SecurityError("Invalid input path provided");
   }
 
   // Resolve to absolute path to prevent traversal
-  const absolutePath = path.resolve(filename);
+  const absolutePath = path.resolve(inputPath);
   const workingDir = process.cwd();
 
   // Prevent path traversal outside working directory or user home
@@ -31,37 +33,125 @@ export function validateInputFile(filename: string): string {
 
   if (!isInWorkingDir && !isInUserHome) {
     throw new SecurityError(
-      "Path traversal detected - file must be within working directory or user home"
+      "Path traversal detected - input must be within working directory or user home"
     );
   }
 
-  // Check if file exists AFTER security validation
+  // Check if path exists AFTER security validation
   if (!fs.existsSync(absolutePath)) {
-    err(`File ${filename} not found`);
+    err(`Path ${inputPath} not found`);
   }
 
+  const stats = fs.statSync(absolutePath);
+
+  if (stats.isFile()) {
+    return validateFile(absolutePath, stats);
+  } else if (stats.isDirectory()) {
+    return validateDirectory(absolutePath);
+  } else {
+    throw new SecurityError("Path must be a regular file or directory");
+  }
+}
+
+function validateFile(filePath: string, stats: fs.Stats): string {
   // Validate file extension
-  const extension = path.extname(absolutePath).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+  const extension = path.extname(filePath).toLowerCase();
+  const allAllowedExtensions = [...ALLOWED_FILE_EXTENSIONS, ...ALLOWED_ARCHIVE_EXTENSIONS];
+  
+  if (!allAllowedExtensions.includes(extension)) {
     throw new SecurityError(
-      `Invalid file type. Allowed extensions: ${ALLOWED_EXTENSIONS.join(", ")}`
+      `Invalid file type. Allowed extensions: ${allAllowedExtensions.join(", ")}`
     );
   }
 
   // Check file size to prevent DoS
-  const stats = fs.statSync(absolutePath);
   if (stats.size > MAX_FILE_SIZE) {
     throw new SecurityError(
       `File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`
     );
   }
 
-  // Ensure it's a regular file, not a device or socket
-  if (!stats.isFile()) {
-    throw new SecurityError("Path must be a regular file");
+  return filePath;
+}
+
+function validateDirectory(dirPath: string): string {
+  // Check total directory size to prevent DoS
+  const totalSize = calculateDirectorySize(dirPath);
+  if (totalSize > MAX_DIRECTORY_SIZE) {
+    throw new SecurityError(
+      `Directory too large. Maximum size: ${MAX_DIRECTORY_SIZE / 1024 / 1024}MB`
+    );
   }
 
-  return absolutePath;
+  // Ensure directory contains processable files
+  const hasProcessableFiles = containsProcessableFiles(dirPath);
+  if (!hasProcessableFiles) {
+    throw new SecurityError(
+      `Directory must contain at least one processable file (${ALLOWED_FILE_EXTENSIONS.join(", ")})`
+    );
+  }
+
+  return dirPath;
+}
+
+function calculateDirectorySize(dirPath: string): number {
+  let totalSize = 0;
+  
+  function scanDirectory(currentPath: string): void {
+    try {
+      const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(currentPath, entry.name);
+        
+        if (entry.isDirectory()) {
+          scanDirectory(fullPath);
+        } else if (entry.isFile()) {
+          const stats = fs.statSync(fullPath);
+          totalSize += stats.size;
+          
+          // Early exit if size limit exceeded
+          if (totalSize > MAX_DIRECTORY_SIZE) {
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      // Skip directories we can't read
+    }
+  }
+  
+  scanDirectory(dirPath);
+  return totalSize;
+}
+
+function containsProcessableFiles(dirPath: string): boolean {
+  function scanDirectory(currentPath: string): boolean {
+    try {
+      const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(currentPath, entry.name);
+        
+        if (entry.isDirectory()) {
+          if (scanDirectory(fullPath)) {
+            return true;
+          }
+        } else if (entry.isFile()) {
+          const extension = path.extname(entry.name).toLowerCase();
+          if (ALLOWED_FILE_EXTENSIONS.includes(extension)) {
+            return true;
+          }
+        }
+      }
+    } catch (error) {
+      // Skip directories we can't read
+    }
+    
+    return false;
+  }
+  
+  return scanDirectory(dirPath);
 }
 
 /**

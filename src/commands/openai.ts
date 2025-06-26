@@ -1,6 +1,6 @@
 import { cli } from "../cli.js";
 import prettier from "../plugins/prettier.js";
-import { unminifyParallel } from "../unminify.js";
+import { unminifyEnhanced } from "../unminify-enhanced.js";
 import babel from "../plugins/babel/babel.js";
 import { openaiRename } from "../plugins/openai/openai-rename.js";
 import { SecureLogger } from "../security/secure-logger.js";
@@ -13,7 +13,6 @@ export const openai = cli()
   .option("-m, --model <model>", "The model to use (gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4.1-mini, gpt-4.1-nano, o1, o3, o3-mini, o4-mini)", "gpt-4.1")
   .option("--advanced", "Force enable advanced multi-agent system (enabled by default for GPT-4.1+)", false)
   .option("--basic", "Use basic single-agent approach for speed over quality", false)
-  .option("-o, --outputDir <output>", "The output directory", "output")
   .option(
     "-k, --apiKey <apiKey>",
     "The OpenAI API key. Alternatively use OPENAI_API_KEY environment variable"
@@ -24,8 +23,8 @@ export const openai = cli()
     "Number of files to process in parallel",
     String(os.cpus().length)
   )
-  .argument("input", "The input minified Javascript file")
-  .action(async (filename, opts) => {
+  .argument("input", "The input file, directory, or ZIP file to deobfuscate")
+  .action(async (input, opts) => {
     if (opts.verbose) {
       SecureLogger.enableVerbose();
     }
@@ -45,9 +44,8 @@ export const openai = cli()
       SecureLogger.debug("🔄 Standard processing mode enabled");
     }
     
-    await unminifyParallel(
-      filename,
-      opts.outputDir,
+    await unminifyEnhanced(
+      input,
       [babel, openaiRename({ apiKey, model: opts.model, useAdvancedAgent }), prettier],
       concurrency
     );

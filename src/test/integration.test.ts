@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { readFile, writeFile, rm, mkdir } from "node:fs/promises";
-import { humanify } from "../test-utils.js";
+import { reverseMachine } from "../test-utils.js";
 
 const TEST_FIXTURES_DIR = "integration-fixtures";
 const TEST_OUTPUT_DIR = "integration-output";
@@ -28,7 +28,7 @@ for(var n=0;n<10;n++){console.log(n)}
 
   await writeFile(testFile, complexCode);
 
-  const result = await humanify(
+  const result = await reverseMachine(
     "local",
     testFile,
     "--outputDir",
@@ -70,7 +70,7 @@ test("Integration: Multiple file processing workflow", { skip: !process.env.OPEN
     const inputFile = `${TEST_FIXTURES_DIR}/${files[i]}`;
     const outputDir = `${TEST_OUTPUT_DIR}/output${i}`;
 
-    await humanify("openai", inputFile, "--outputDir", outputDir);
+    await reverseMachine("openai", inputFile, "--outputDir", outputDir);
 
     const outputContent = await readFile(
       `${outputDir}/deobfuscated.js`,
@@ -89,7 +89,7 @@ test("Integration: Error recovery and graceful degradation", { skip: !process.en
   await writeFile(malformedFile, "function broken(a,b{return a+b"); // Missing closing paren
 
   try {
-    await humanify("openai", malformedFile, "--outputDir", TEST_OUTPUT_DIR);
+    await reverseMachine("openai", malformedFile, "--outputDir", TEST_OUTPUT_DIR);
     // If it succeeds, that's fine too - some tools can handle partial JS
     console.log("Malformed JS was handled gracefully");
   } catch (error) {
@@ -107,7 +107,7 @@ test("Integration: File system edge cases", { skip: !process.env.OPENAI_API_KEY 
   const unusualFile = `${TEST_FIXTURES_DIR}/test-file.with.dots.and-dashes.min.js`;
   await writeFile(unusualFile, "function a(b){return b*2}");
 
-  await humanify("openai", unusualFile, "--outputDir", TEST_OUTPUT_DIR);
+  await reverseMachine("openai", unusualFile, "--outputDir", TEST_OUTPUT_DIR);
 
   const outputContent = await readFile(
     `${TEST_OUTPUT_DIR}/deobfuscated.js`,
@@ -138,7 +138,7 @@ function batch${i}(param) {
   // Process them sequentially (to avoid overloading)
   for (const file of files) {
     const outputDir = `${TEST_OUTPUT_DIR}/${file.replace(/[^a-zA-Z0-9]/g, "_")}`;
-    await humanify("openai", file, "--outputDir", outputDir);
+    await reverseMachine("openai", file, "--outputDir", outputDir);
 
     const outputContent = await readFile(
       `${outputDir}/deobfuscated.js`,
@@ -155,14 +155,14 @@ test("Integration: Verbose mode provides detailed output", { skip: !process.env.
   const testFile = `${TEST_FIXTURES_DIR}/verbose-test.js`;
   await writeFile(testFile, "function a(b,c){return b+c}");
 
-  const verboseResult = await humanify(
+  const verboseResult = await reverseMachine(
     "local",
     testFile,
     "--verbose",
     "--outputDir",
     TEST_OUTPUT_DIR
   );
-  const normalResult = await humanify(
+  const normalResult = await reverseMachine(
     "local",
     testFile,
     "--outputDir",
@@ -192,7 +192,7 @@ function test() {
   `.trim()
   );
 
-  await humanify("openai", testFile, "--outputDir", TEST_OUTPUT_DIR);
+  await reverseMachine("openai", testFile, "--outputDir", TEST_OUTPUT_DIR);
 
   const outputContent = await readFile(
     `${TEST_OUTPUT_DIR}/deobfuscated.js`,
