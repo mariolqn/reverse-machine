@@ -25,17 +25,18 @@ export class SecureCodeProcessor {
     const maxMemory = options.maxMemoryMb || MAX_MEMORY_MB;
 
     // Validate input size
-    if (code.length > 10 * 1024 * 1024) { // 10MB limit
-      throw new SecurityError('Code input too large for secure processing');
+    if (code.length > 10 * 1024 * 1024) {
+      // 10MB limit
+      throw new SecurityError("Code input too large for secure processing");
     }
 
     // Check for dangerous patterns in code
     this.validateCodeSafety(code);
 
     // Create temporary worker script
-    const workerId = randomBytes(16).toString('hex');
+    const workerId = randomBytes(16).toString("hex");
     const workerPath = join(tmpdir(), `secure-worker-${workerId}.js`);
-    
+
     try {
       // Create isolated worker script
       const workerScript = this.createWorkerScript(processingFunction);
@@ -47,7 +48,10 @@ export class SecureCodeProcessor {
       try {
         unlinkSync(workerPath);
       } catch (error) {
-        SecureLogger.warn('Failed to clean up worker file', { error, workerPath });
+        SecureLogger.warn("Failed to clean up worker file", {
+          error,
+          workerPath
+        });
       }
     }
   }
@@ -68,12 +72,14 @@ export class SecureCodeProcessor {
       /process\./, // Process object access
       /global\./, // Global object access
       /__dirname/, // Directory access
-      /__filename/, // File access
+      /__filename/ // File access
     ];
 
     for (const pattern of dangerousPatterns) {
       if (pattern.test(code)) {
-        throw new SecurityError(`Code contains potentially dangerous pattern: ${pattern.source}`);
+        throw new SecurityError(
+          `Code contains potentially dangerous pattern: ${pattern.source}`
+        );
       }
     }
   }
@@ -132,12 +138,12 @@ try {
 
       const timeoutHandle = setTimeout(() => {
         worker.terminate();
-        reject(new SecurityError('Code processing timeout exceeded'));
+        reject(new SecurityError("Code processing timeout exceeded"));
       }, timeout);
 
-      worker.on('message', (message) => {
+      worker.on("message", (message) => {
         clearTimeout(timeoutHandle);
-        
+
         if (message.success) {
           resolve(message.result);
         } else {
@@ -145,12 +151,12 @@ try {
         }
       });
 
-      worker.on('error', (error) => {
+      worker.on("error", (error) => {
         clearTimeout(timeoutHandle);
         reject(new SecurityError(`Worker error: ${error.message}`));
       });
 
-      worker.on('exit', (code) => {
+      worker.on("exit", (code) => {
         clearTimeout(timeoutHandle);
         if (code !== 0) {
           reject(new SecurityError(`Worker exited with code ${code}`));
@@ -196,4 +202,4 @@ function processCode(code) {
   
   return result.code;
 }
-`; 
+`;

@@ -3,12 +3,23 @@
  */
 export class SecureLogger {
   private static readonly SENSITIVE_KEYS = [
-    'apikey', 'api_key', 'api-key',
-    'token', 'access_token', 'access-token',
-    'password', 'passwd', 'pwd',
-    'secret', 'private_key', 'private-key',
-    'authorization', 'auth',
-    'bearer', 'credential', 'credentials'
+    "apikey",
+    "api_key",
+    "api-key",
+    "token",
+    "access_token",
+    "access-token",
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "private_key",
+    "private-key",
+    "authorization",
+    "auth",
+    "bearer",
+    "credential",
+    "credentials"
   ];
 
   private static readonly SENSITIVE_PATTERNS = [
@@ -16,42 +27,49 @@ export class SecureLogger {
     /AIza[0-9A-Za-z-_]{35}/, // Google API keys
     /ya29\.[0-9A-Za-z\-_]+/, // Google OAuth tokens
     /ghp_[a-zA-Z0-9]{36}/, // GitHub personal access tokens
-    /glpat-[a-zA-Z0-9\-_]{20}/, // GitLab personal access tokens
+    /glpat-[a-zA-Z0-9\-_]{20}/ // GitLab personal access tokens
   ];
 
-  private static readonly REDACTED_TEXT = '[REDACTED]';
+  private static readonly REDACTED_TEXT = "[REDACTED]";
   private static enabled = false;
 
   static enableVerbose(): void {
     this.enabled = true;
   }
 
-  static log(level: 'info' | 'warn' | 'error' | 'debug', message: string, ...args: any[]): void {
-    if (!this.enabled && level === 'debug') {
+  static log(
+    level: "info" | "warn" | "error" | "debug",
+    message: string,
+    ...args: any[]
+  ): void {
+    if (!this.enabled && level === "debug") {
       return;
     }
 
     const timestamp = new Date().toISOString();
-    const sanitizedArgs = args.map(arg => this.sanitizeData(arg));
+    const sanitizedArgs = args.map((arg) => this.sanitizeData(arg));
     const sanitizedMessage = this.sanitizeString(message);
-    
-    console.log(`[${timestamp}] [${level.toUpperCase()}] ${sanitizedMessage}`, ...sanitizedArgs);
+
+    console.log(
+      `[${timestamp}] [${level.toUpperCase()}] ${sanitizedMessage}`,
+      ...sanitizedArgs
+    );
   }
 
   static info(message: string, ...args: any[]): void {
-    this.log('info', message, ...args);
+    this.log("info", message, ...args);
   }
 
   static warn(message: string, ...args: any[]): void {
-    this.log('warn', message, ...args);
+    this.log("warn", message, ...args);
   }
 
   static error(message: string, ...args: any[]): void {
-    this.log('error', message, ...args);
+    this.log("error", message, ...args);
   }
 
   static debug(message: string, ...args: any[]): void {
-    this.log('debug', message, ...args);
+    this.log("debug", message, ...args);
   }
 
   /**
@@ -62,19 +80,19 @@ export class SecureLogger {
       return data;
     }
 
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       return this.sanitizeString(data);
     }
 
-    if (typeof data === 'number' || typeof data === 'boolean') {
+    if (typeof data === "number" || typeof data === "boolean") {
       return data;
     }
 
     if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeData(item));
+      return data.map((item) => this.sanitizeData(item));
     }
 
-    if (typeof data === 'object') {
+    if (typeof data === "object") {
       return this.sanitizeObject(data);
     }
 
@@ -103,8 +121,12 @@ export class SecureLogger {
 
     for (const [key, value] of Object.entries(obj)) {
       const lowerKey = key.toLowerCase();
-      
-      if (this.SENSITIVE_KEYS.some(sensitiveKey => lowerKey.includes(sensitiveKey))) {
+
+      if (
+        this.SENSITIVE_KEYS.some((sensitiveKey) =>
+          lowerKey.includes(sensitiveKey)
+        )
+      ) {
         sanitized[key] = this.REDACTED_TEXT;
       } else {
         sanitized[key] = this.sanitizeData(value);
@@ -133,7 +155,7 @@ export const verbose = {
   enabled: false,
   log: (...args: any[]) => {
     if (verbose.enabled) {
-      SecureLogger.debug('Verbose', ...args);
+      SecureLogger.debug("Verbose", ...args);
     }
   }
-}; 
+};

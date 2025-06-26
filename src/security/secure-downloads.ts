@@ -8,9 +8,9 @@ import { SecureLogger } from "./secure-logger.js";
 const DOWNLOAD_TIMEOUT = 300000; // 5 minutes
 const MAX_DOWNLOAD_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
 const ALLOWED_CONTENT_TYPES = [
-  'application/octet-stream',
-  'application/x-binary',
-  'binary/octet-stream'
+  "application/octet-stream",
+  "application/x-binary",
+  "binary/octet-stream"
 ];
 
 export interface SecureDownloadOptions {
@@ -37,10 +37,10 @@ export class SecureDownloader {
     const timeout = options.timeout || DOWNLOAD_TIMEOUT;
     const allowedTypes = options.allowedContentTypes || ALLOWED_CONTENT_TYPES;
 
-    SecureLogger.info('Starting secure download', { 
+    SecureLogger.info("Starting secure download", {
       url: url.hostname + url.pathname, // Don't log full URL with potential secrets
       outputPath,
-      expectedHash: options.expectedHash ? '[PROVIDED]' : 'none'
+      expectedHash: options.expectedHash ? "[PROVIDED]" : "none"
     });
 
     // Validate URL
@@ -55,11 +55,11 @@ export class SecureDownloader {
       response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'HumanifyJS/2.1.2 (Security-Enhanced)',
-          'Accept': allowedTypes.join(', '),
-          'Cache-Control': 'no-cache'
+          "User-Agent": "HumanifyJS/2.1.2 (Security-Enhanced)",
+          Accept: allowedTypes.join(", "),
+          "Cache-Control": "no-cache"
         },
-        redirect: 'error' // Prevent redirect attacks
+        redirect: "error" // Prevent redirect attacks
       });
 
       clearTimeout(timeoutId);
@@ -72,10 +72,10 @@ export class SecureDownloader {
 
     // Create temporary file for atomic download
     const tmpPath = `${outputPath}.tmp`;
-    
+
     try {
       await this.downloadToFile(response, tmpPath, maxSize);
-      
+
       // Verify integrity if hash provided
       if (options.expectedHash) {
         await this.verifyFileIntegrity(tmpPath, options.expectedHash);
@@ -87,17 +87,16 @@ export class SecureDownloader {
       }
 
       // Atomic move to final location
-      const fs = await import('fs/promises');
+      const fs = await import("fs/promises");
       await fs.rename(tmpPath, outputPath);
 
-      SecureLogger.info('Download completed successfully', { outputPath });
-
+      SecureLogger.info("Download completed successfully", { outputPath });
     } catch (error) {
       // Clean up on failure
       try {
         unlinkSync(tmpPath);
-      } catch (cleanupError) {
-        SecureLogger.warn('Failed to clean up temporary file', { tmpPath });
+      } catch {
+        SecureLogger.warn("Failed to clean up temporary file", { tmpPath });
       }
       throw error;
     }
@@ -108,31 +107,39 @@ export class SecureDownloader {
    */
   private static validateDownloadUrl(url: URL): void {
     // Only allow HTTPS
-    if (url.protocol !== 'https:') {
-      throw new SecurityError('Only HTTPS downloads are allowed');
+    if (url.protocol !== "https:") {
+      throw new SecurityError("Only HTTPS downloads are allowed");
     }
 
     // Validate hostname - prevent localhost and private IPs
     const hostname = url.hostname.toLowerCase();
-    
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
-      throw new SecurityError('Downloads from localhost are not allowed');
+
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1"
+    ) {
+      throw new SecurityError("Downloads from localhost are not allowed");
     }
 
     // Block private IP ranges
     if (this.isPrivateIP(hostname)) {
-      throw new SecurityError('Downloads from private IP addresses are not allowed');
+      throw new SecurityError(
+        "Downloads from private IP addresses are not allowed"
+      );
     }
 
     // Validate against allowed domains
     const allowedDomains = [
-      'huggingface.co',
-      'github.com',
-      'githubusercontent.com'
+      "huggingface.co",
+      "github.com",
+      "githubusercontent.com"
     ];
 
-    if (!allowedDomains.some(domain => hostname.endsWith(domain))) {
-      throw new SecurityError(`Downloads only allowed from: ${allowedDomains.join(', ')}`);
+    if (!allowedDomains.some((domain) => hostname.endsWith(domain))) {
+      throw new SecurityError(
+        `Downloads only allowed from: ${allowedDomains.join(", ")}`
+      );
     }
   }
 
@@ -148,7 +155,7 @@ export class SecureDownloader {
       /^fe80:/ // fe80::/10 (IPv6)
     ];
 
-    return privateRanges.some(range => range.test(hostname));
+    return privateRanges.some((range) => range.test(hostname));
   }
 
   /**
@@ -160,19 +167,26 @@ export class SecureDownloader {
     maxSize: number
   ): void {
     if (!response.ok) {
-      throw new SecurityError(`Download failed with status: ${response.status}`);
+      throw new SecurityError(
+        `Download failed with status: ${response.status}`
+      );
     }
 
     // Check content type
-    const contentType = response.headers.get('content-type');
-    if (contentType && !allowedTypes.some(type => contentType.includes(type))) {
+    const contentType = response.headers.get("content-type");
+    if (
+      contentType &&
+      !allowedTypes.some((type) => contentType.includes(type))
+    ) {
       throw new SecurityError(`Invalid content type: ${contentType}`);
     }
 
     // Check content length
-    const contentLength = response.headers.get('content-length');
+    const contentLength = response.headers.get("content-length");
     if (contentLength && parseInt(contentLength) > maxSize) {
-      throw new SecurityError(`File too large: ${contentLength} bytes (max: ${maxSize})`);
+      throw new SecurityError(
+        `File too large: ${contentLength} bytes (max: ${maxSize})`
+      );
     }
   }
 
@@ -185,72 +199,96 @@ export class SecureDownloader {
     maxSize: number
   ): Promise<void> {
     if (!response.body) {
-      throw new SecurityError('Response body is empty');
+      throw new SecurityError("Response body is empty");
     }
 
     const fileStream = createWriteStream(outputPath);
     const readStream = Readable.fromWeb(response.body);
-    
+
     let downloadedBytes = 0;
 
     // Monitor download progress and size
-    readStream.on('data', (chunk) => {
+    readStream.on("data", (chunk) => {
       downloadedBytes += chunk.length;
       if (downloadedBytes > maxSize) {
         readStream.destroy();
         fileStream.destroy();
-        throw new SecurityError(`Download exceeded size limit: ${maxSize} bytes`);
+        throw new SecurityError(
+          `Download exceeded size limit: ${maxSize} bytes`
+        );
       }
     });
 
     try {
       await finished(readStream.pipe(fileStream));
     } catch (error) {
-      throw new SecurityError(`Download stream error: ${(error as Error).message}`);
+      throw new SecurityError(
+        `Download stream error: ${(error as Error).message}`
+      );
     }
   }
 
   /**
    * Verifies file integrity using SHA-256 hash
    */
-  private static async verifyFileIntegrity(filePath: string, expectedHash: string): Promise<void> {
-    const fs = await import('fs/promises');
-    
+  private static async verifyFileIntegrity(
+    filePath: string,
+    expectedHash: string
+  ): Promise<void> {
+    const fs = await import("fs/promises");
+
     try {
       const fileBuffer = await fs.readFile(filePath);
-      const actualHash = createHash('sha256').update(fileBuffer).digest('hex');
-      
+      const actualHash = createHash("sha256").update(fileBuffer).digest("hex");
+
       if (actualHash !== expectedHash.toLowerCase()) {
-        throw new SecurityError(`File integrity check failed. Expected: ${expectedHash}, Got: ${actualHash}`);
+        throw new SecurityError(
+          `File integrity check failed. Expected: ${expectedHash}, Got: ${actualHash}`
+        );
       }
 
-      SecureLogger.info('File integrity verified', { expectedHash, actualHash });
+      SecureLogger.info("File integrity verified", {
+        expectedHash,
+        actualHash
+      });
     } catch (error) {
       if (error instanceof SecurityError) {
         throw error;
       }
-      throw new SecurityError(`Integrity verification failed: ${(error as Error).message}`);
+      throw new SecurityError(
+        `Integrity verification failed: ${(error as Error).message}`
+      );
     }
   }
 
   /**
    * Verifies file size matches expected size
    */
-  private static async verifyFileSize(filePath: string, expectedSize: number): Promise<void> {
-    const fs = await import('fs/promises');
-    
+  private static async verifyFileSize(
+    filePath: string,
+    expectedSize: number
+  ): Promise<void> {
+    const fs = await import("fs/promises");
+
     try {
       const stats = await fs.stat(filePath);
       if (stats.size !== expectedSize) {
-        throw new SecurityError(`File size mismatch. Expected: ${expectedSize}, Got: ${stats.size}`);
+        throw new SecurityError(
+          `File size mismatch. Expected: ${expectedSize}, Got: ${stats.size}`
+        );
       }
 
-      SecureLogger.info('File size verified', { expectedSize, actualSize: stats.size });
+      SecureLogger.info("File size verified", {
+        expectedSize,
+        actualSize: stats.size
+      });
     } catch (error) {
       if (error instanceof SecurityError) {
         throw error;
       }
-      throw new SecurityError(`Size verification failed: ${(error as Error).message}`);
+      throw new SecurityError(
+        `Size verification failed: ${(error as Error).message}`
+      );
     }
   }
-} 
+}

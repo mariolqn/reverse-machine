@@ -1,7 +1,7 @@
 import test from "node:test";
 import { readFile, rm } from "node:fs/promises";
 import { testPrompt } from "./test-prompt.js";
-import { gbnf } from "../plugins/local-llm-rename/gbnf.js";
+// Note: GBNF functionality removed with local models
 import assert from "node:assert";
 import { humanify } from "../test-utils.js";
 
@@ -16,8 +16,7 @@ test("Unminifies an example file successfully", async () => {
     const prompt = await testPrompt();
     return await prompt(
       `Your job is to read the following code and rate it's readabillity and variable names. Answer "EXCELLENT", "GOOD" or "UNREADABLE".`,
-      await readFile(filename, "utf-8"),
-      gbnf`${/("EXCELLENT" | "GOOD" | "UNREADABLE") [^.]+/}.`
+      await readFile(filename, "utf-8")
     );
   };
   const expectStartsWith = (expected: string[], actual: string) => {

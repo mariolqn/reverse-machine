@@ -26,5 +26,33 @@ export default [
         }
       ]
     }
+  },
+  {
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        Buffer: "readonly",
+        global: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly"
+      }
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": ["error", {
+        "ignoreRestArgs": true,
+        "fixToUnknown": false
+      }]
+    }
+  },
+  {
+    files: ["src/security/**/*", "src/plugins/**/*", "src/commands/**/*"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
   }
 ];

@@ -25,7 +25,7 @@ const flipComparisonsTheRightWayAround: PluginItem = {
     // If a variable is compared to a literal, flip the comparison around so that the literal is on the right-hand side
     BinaryExpression(path) {
       const node = path.node;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const mappings: any = {
         "==": "==",
         "!=": "!=",

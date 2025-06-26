@@ -1,4 +1,4 @@
-import { visitAllIdentifiers } from "./local-llm-rename/visit-all-identifiers.js";
+import { visitAllIdentifiers } from "./visit-all-identifiers.js";
 import { SecureLogger } from "../security/secure-logger.js";
 import { parseGeminiResponse } from "../security/secure-json.js";
 import { showPercentage } from "../progress.js";
@@ -36,11 +36,12 @@ export function geminiRename({
     // Dynamic import to avoid TypeScript declaration issues
     let GoogleGenerativeAI: any;
     try {
-      // @ts-ignore - Dynamic import for optional dependency
       const geminiModule = await import("@google/generative-ai");
       GoogleGenerativeAI = geminiModule.GoogleGenerativeAI;
     } catch (error) {
-      SecureLogger.error("Failed to import Google Generative AI module", { error });
+      SecureLogger.error("Failed to import Google Generative AI module", {
+        error
+      });
       return code; // Return original code if import fails
     }
 
@@ -50,7 +51,9 @@ export function geminiRename({
       code,
       async (name, surroundingCode) => {
         SecureLogger.debug(`Renaming ${name}`);
-        SecureLogger.debug("Context: ", { contextLength: surroundingCode.length });
+        SecureLogger.debug("Context: ", {
+          contextLength: surroundingCode.length
+        });
 
         try {
           const model = client.getGenerativeModel(
@@ -58,15 +61,15 @@ export function geminiRename({
           );
 
           const result = await model.generateContent(surroundingCode);
-          
+
           const parsed = parseGeminiResponse(result.response.text());
 
           SecureLogger.debug(`Renamed to ${parsed.newName}`);
           return parsed.newName;
         } catch (error) {
-          SecureLogger.error("Failed to rename variable with Gemini", { 
+          SecureLogger.error("Failed to rename variable with Gemini", {
             error: (error as Error).message,
-            variableName: name 
+            variableName: name
           });
           return name; // Fallback to original name
         }

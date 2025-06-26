@@ -8,7 +8,7 @@ import { parse } from "@babel/parser";
 export async function unminify(
   filename: string,
   outputDir: string,
-  plugins: ((code: string) => Promise<string>)[] = []
+  plugins: ((_code: string) => Promise<string>)[] = []
 ) {
   const validatedFile = ensureFileExists(filename);
   const validatedOutputDir = validateOutputPath(outputDir);
@@ -21,10 +21,10 @@ export async function unminify(
     const file = extractedFiles[i];
     const code = await fs.readFile(file.path, "utf-8");
 
-          if (code.trim().length === 0) {
-        SecureLogger.debug(`Skipping empty file ${file.path}`);
-        continue;
-      }
+    if (code.trim().length === 0) {
+      SecureLogger.debug(`Skipping empty file ${file.path}`);
+      continue;
+    }
 
     let formattedCode = code;
 
@@ -42,7 +42,9 @@ export async function unminify(
     }
 
     SecureLogger.debug("Input processed", { inputLength: code.length });
-    SecureLogger.debug("Output generated", { outputLength: formattedCode.length });
+    SecureLogger.debug("Output generated", {
+      outputLength: formattedCode.length
+    });
 
     await fs.writeFile(file.path, formattedCode);
   }
@@ -51,7 +53,7 @@ export async function unminify(
 export async function unminifyParallel(
   filename: string,
   outputDir: string,
-  plugins: ((code: string) => Promise<string>)[] = [],
+  plugins: ((_code: string) => Promise<string>)[] = [],
   concurrency: number
 ) {
   try {
@@ -62,7 +64,9 @@ export async function unminifyParallel(
 
     const processFile = async (file: { path: string }, index: number) => {
       try {
-        SecureLogger.debug(`Processing file ${index + 1}/${extractedFiles.length}`);
+        SecureLogger.debug(
+          `Processing file ${index + 1}/${extractedFiles.length}`
+        );
 
         const code = await fs.readFile(file.path, "utf-8");
 
@@ -78,7 +82,10 @@ export async function unminifyParallel(
           try {
             formattedCode = await plugin(formattedCode);
           } catch (pluginError) {
-            console.error(`Error in plugin for file ${file.path}:`, pluginError);
+            console.error(
+              `Error in plugin for file ${file.path}:`,
+              pluginError
+            );
             // Continue with the next plugin
           }
         }
@@ -87,12 +94,18 @@ export async function unminifyParallel(
         try {
           parse(formattedCode, { sourceType: "module", plugins: ["jsx"] });
         } catch (parseError) {
-          console.error(`Syntax error in file ${file.path} after processing:`, parseError);
+          console.error(
+            `Syntax error in file ${file.path} after processing:`,
+            parseError
+          );
           console.error("Problematic code snippet:");
-          const lines = formattedCode.split('\n');
-          const errorLine = (parseError as { loc?: { line: number } }).loc?.line;
+          const lines = formattedCode.split("\n");
+          const errorLine = (parseError as { loc?: { line: number } }).loc
+            ?.line;
           if (errorLine) {
-            console.error(lines.slice(Math.max(0, errorLine - 5), errorLine + 5).join('\n'));
+            console.error(
+              lines.slice(Math.max(0, errorLine - 5), errorLine + 5).join("\n")
+            );
           }
           // Revert to the original code if parsing fails
           formattedCode = code;
@@ -101,8 +114,14 @@ export async function unminifyParallel(
         // Fix invalid escape sequences
         formattedCode = fixInvalidEscapeSequences(formattedCode);
 
-        SecureLogger.debug("Input processed", { inputLength: code.length, filePath: file.path });
-        SecureLogger.debug("Output generated", { outputLength: formattedCode.length, filePath: file.path });
+        SecureLogger.debug("Input processed", {
+          inputLength: code.length,
+          filePath: file.path
+        });
+        SecureLogger.debug("Output generated", {
+          outputLength: formattedCode.length,
+          filePath: file.path
+        });
 
         await fs.writeFile(file.path, formattedCode);
       } catch (error) {
@@ -117,7 +136,7 @@ export async function unminifyParallel(
     }
 
     await Promise.all(
-      batches.map(batch =>
+      batches.map((batch) =>
         Promise.all(batch.map((file, index) => processFile(file, index)))
       )
     );
@@ -129,6 +148,6 @@ export async function unminifyParallel(
 
 function fixInvalidEscapeSequences(code: string): string {
   return code.replace(/\\u([0-9a-fA-F]{0,3}[^0-9a-fA-F])/g, (match, p1) => {
-    return `\\u${p1.padStart(4, '0')}`;
+    return `\\u${p1.padStart(4, "0")}`;
   });
 }

@@ -6,7 +6,7 @@ const traverse: typeof babelTraverse.default.default = (
   typeof babelTraverse.default === "function"
     ? babelTraverse.default
     : babelTraverse.default.default
-) as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- This hack is because pkgroll fucks up the import somehow
+) as any;  
 
 const CONTEXT_WINDOW_SIZE = 200;
 
@@ -15,7 +15,7 @@ type Visitor = (name: string, scope: string) => Promise<string>;
 export async function visitAllIdentifiers(
   code: string,
   visitor: Visitor,
-  onProgress?: (percentageDone: number) => void
+  onProgress?: (_percentageDone: number) => void
 ) {
   const ast = await parseAsync(code);
   const renames = new Set<string>();
@@ -119,4 +119,4 @@ function closestSurroundingContextPath(
     (p) => p.isProgram() || path.node.name in p.getOuterBindingIdentifiers()
   )?.scope.path;
   return programOrBindingNode ?? path.scope.path;
-}
+} 

@@ -24,10 +24,22 @@ function formatBytes(numBytes: number) {
 
 export function showPercentage(percentage: number) {
   const percentageStr = Math.round(percentage * 100);
+  
+  // Skip progress display in test environments or when stdout doesn't support cursor control
+  if (process.env.NODE_ENV === 'test' || 
+      !process.stdout.isTTY || 
+      typeof process.stdout.cursorTo !== 'function') {
+    return;
+  }
+  
   if (!verbose.enabled) {
-    process.stdout.clearLine?.(0);
-    process.stdout.cursorTo(0);
-    process.stdout.write(`Processing: ${percentageStr}%`);
+    try {
+      process.stdout.clearLine?.(0);
+      process.stdout.cursorTo(0);
+      process.stdout.write(`Processing: ${percentageStr}%`);
+    } catch {
+      // Silently fail if progress display isn't supported
+    }
   } else {
     verbose.log(`Processing: ${percentageStr}%`);
   }

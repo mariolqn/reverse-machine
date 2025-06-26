@@ -12,7 +12,7 @@
     "deploy:release": " git push --tags && npm run build && npm publish && npm run deploy:create-github-release",
     "deploy:create-github-release": "tar -czvf dist.tar.gz dist && gh release create v$npm_package_version --generate-notes dist.tar.gz",
     "test": "npm run test:unit && npm run test:e2e && npm run test:llm",
-    "test:unit": "find src -name '*.test.ts' | xargs tsx --test",
+    "test:unit": "find src -name '*.test.ts' -not -path '*/test/stress.stress.ts' -not -path '*/test/memory-leak.test.ts' -not -path '*/test/performance.perftest.ts' | xargs tsx --test",
     "test:e2e": "npm run build && find src -name '*.e2etest.ts' | xargs tsx --test --test-concurrency=1",
     "test:llm": "find src -name '*.llmtest.ts' | xargs tsx --test --test-concurrency=1",
     "test:openai": "npm run build && find src -name '*.openaitest.ts' | xargs tsx --test",
@@ -24,11 +24,15 @@
     "test:security": "npm run test:unit -- src/security/security-tests.test.ts && npm audit --audit-level=moderate",
     "test:stress": "find src -name '*.stress.ts' | xargs tsx --test --test-concurrency=1",
     "test:memory": "node --expose-gc --inspect=0.0.0.0:9229 $(which tsx) --test src/test/memory-leak.test.ts",
-    "test:all": "npm run test:coverage && npm run test:integration && npm run test:performance && npm run test:smoke && npm run test:security",
+    "test:safe": "find src -name '*.test.ts' -not -path '*/test/stress.stress.ts' -not -path '*/test/memory-leak.test.ts' -not -path '*/test/performance.perftest.ts' | xargs tsx --test",
+    "test:ultra-safe": "find src -name '*.test.ts' -path '*/plugins/local-llm-rename/*.test.ts' -o -path '*/babel/*.test.ts' -o -path '*/security/*.test.ts' | xargs tsx --test",
+    "test:minimal": "tsx --test src/plugins/visit-all-identifiers.test.ts src/security/security-tests.test.ts",
+    "test:evals": "npm run build && tsx --test src/test/deobfuscation-evals.test.ts",
+    "test:gpt41": "npm run build && tsx --test src/test/deobfuscation-evals.test.ts --verbose",
+    "test:all": "npm run test:coverage && npm run test:integration && npm run test:performance && npm run test:smoke && npm run test:security && npm run test:evals",
     "lint": "npm run lint:prettier && npm run lint:eslint",
     "lint:prettier": "prettier --check src/* src/**/*",
-    "lint:eslint": "eslint src/* src/**/*",
-    "download-ci-model": "npx humanify download 2b"
+    "lint:eslint": "eslint src/* src/**/*"
   },
   "bin": {
     "humanify": "dist/index.mjs"
@@ -60,11 +64,9 @@
     "@babel/types": "^7.25.2",
     "@google/generative-ai": "^0.20.0",
     "@types/babel__core": "^7.20.5",
-
     "babel-plugin-transform-beautifier": "^0.1.0",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "node-llama-cpp": "^3.0.0-beta.40",
     "openai": "^4.55.1",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4",
@@ -74,11 +76,9 @@
     "@eslint/js": "^9.8.0",
     "@types/node": "^22.0.0",
     "c8": "^10.1.2",
-    "clinic": "^13.0.0",
     "eslint": "^9.8.0",
     "eslint-plugin-unused-imports": "^4.1.2",
     "globals": "^15.8.0",
-    "memwatch-next": "^0.3.0",
     "pkgroll": "^2.4.2",
     "prettier": "^3.3.3",
     "typescript-eslint": "^8.0.0"

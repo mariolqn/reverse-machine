@@ -9,7 +9,7 @@ test.afterEach(async () => {
   await rm(OUTPUT_DIR, { recursive: true, force: true });
 });
 
-test("Compatibility: ES5 syntax", async () => {
+test("Compatibility: ES5 syntax", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const es5File = "compat-es5.js";
   const es5Code = `
 var a = function(b, c) {
@@ -21,11 +21,11 @@ var e = {
   h: a(1, 2)
 };
   `;
-  
+
   await writeFile(es5File, es5Code);
-  
+
   try {
-    await humanify("local", es5File, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", es5File, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.includes("function"), "Should handle ES5 syntax");
   } finally {
@@ -33,7 +33,7 @@ var e = {
   }
 });
 
-test("Compatibility: ES6+ features", async () => {
+test("Compatibility: ES6+ features", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const es6File = "compat-es6.js";
   const es6Code = `
 const a = (b, c) => b + c;
@@ -45,11 +45,11 @@ class h {
 const [l, m] = [1, 2];
 const {n, o} = {n: 3, o: 4};
   `;
-  
+
   await writeFile(es6File, es6Code);
-  
+
   try {
-    await humanify("local", es6File, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", es6File, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle ES6+ features");
   } finally {
@@ -57,7 +57,7 @@ const {n, o} = {n: 3, o: 4};
   }
 });
 
-test("Compatibility: CommonJS modules", async () => {
+test("Compatibility: CommonJS modules", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const cjsFile = "compat-cjs.js";
   const cjsCode = `
 const a = require('path');
@@ -67,19 +67,22 @@ module.exports = function(c, d) {
 };
 exports.e = function(f) { return f * 2; };
   `;
-  
+
   await writeFile(cjsFile, cjsCode);
-  
+
   try {
-    await humanify("local", cjsFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", cjsFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
-    assert(output.includes("require") || output.includes("module"), "Should handle CommonJS");
+    assert(
+      output.includes("require") || output.includes("module"),
+      "Should handle CommonJS"
+    );
   } finally {
     await rm(cjsFile, { force: true });
   }
 });
 
-test("Compatibility: Template literals and string interpolation", async () => {
+test("Compatibility: Template literals and string interpolation", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const templateFile = "compat-template.js";
   const templateCode = `
 const a = "world";
@@ -93,11 +96,11 @@ function d(e) {
   return \`Result: \${e * 2}\`;
 }
   `;
-  
+
   await writeFile(templateFile, templateCode);
-  
+
   try {
-    await humanify("local", templateFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", templateFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle template literals");
   } finally {
@@ -105,7 +108,7 @@ function d(e) {
   }
 });
 
-test("Compatibility: Async/await and promises", async () => {
+test("Compatibility: Async/await and promises", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const asyncFile = "compat-async.js";
   const asyncCode = `
 async function a(b) {
@@ -121,19 +124,22 @@ const d = async (e) => {
   }
 };
   `;
-  
+
   await writeFile(asyncFile, asyncCode);
-  
+
   try {
-    await humanify("local", asyncFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", asyncFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
-    assert(output.includes("async") || output.includes("await"), "Should handle async/await");
+    assert(
+      output.includes("async") || output.includes("await"),
+      "Should handle async/await"
+    );
   } finally {
     await rm(asyncFile, { force: true });
   }
 });
 
-test("Compatibility: Generator functions", async () => {
+test("Compatibility: Generator functions", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const genFile = "compat-gen.js";
   const genCode = `
 function* a(b) {
@@ -146,19 +152,22 @@ const d = function*(e) {
   yield "done";
 };
   `;
-  
+
   await writeFile(genFile, genCode);
-  
+
   try {
-    await humanify("local", genFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", genFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
-    assert(output.includes("function*") || output.includes("yield"), "Should handle generators");
+    assert(
+      output.includes("function*") || output.includes("yield"),
+      "Should handle generators"
+    );
   } finally {
     await rm(genFile, { force: true });
   }
 });
 
-test("Compatibility: Symbols and iterators", async () => {
+test("Compatibility: Symbols and iterators", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const symbolFile = "compat-symbol.js";
   const symbolCode = `
 const a = Symbol('test');
@@ -170,11 +179,11 @@ const c = {
   }
 };
   `;
-  
+
   await writeFile(symbolFile, symbolCode);
-  
+
   try {
-    await humanify("local", symbolFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", symbolFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
     assert(output.length > 0, "Should handle symbols");
   } finally {
@@ -182,7 +191,7 @@ const c = {
   }
 });
 
-test("Compatibility: Proxy and Reflect", async () => {
+test("Compatibility: Proxy and Reflect", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const proxyFile = "compat-proxy.js";
   const proxyCode = `
 const a = {b: 1, c: 2};
@@ -195,14 +204,17 @@ const d = new Proxy(a, {
   }
 });
   `;
-  
+
   await writeFile(proxyFile, proxyCode);
-  
+
   try {
-    await humanify("local", proxyFile, "--outputDir", OUTPUT_DIR);
+    await humanify("openai", proxyFile, "--outputDir", OUTPUT_DIR);
     const output = await readFile(`${OUTPUT_DIR}/deobfuscated.js`, "utf-8");
-    assert(output.includes("Proxy") || output.includes("Reflect"), "Should handle Proxy/Reflect");
+    assert(
+      output.includes("Proxy") || output.includes("Reflect"),
+      "Should handle Proxy/Reflect"
+    );
   } finally {
     await rm(proxyFile, { force: true });
   }
-}); 
+});
