@@ -1,0 +1,52 @@
+name: Sync with Original Repository
+
+on:
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allows manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sync branch
+        uses: actions/checkout@v4
+        with:
+          ref: sync
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/mariolqn/humanify.git
+          git fetch upstream main
+
+      - name: Sync with upstream
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Reset sync branch to match upstream main
+          git reset --hard upstream/main
+          
+          # Force push to sync branch
+          git push origin sync --force
+
+      - name: Create pull request if changes exist
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          head: sync
+          title: "Sync with upstream repository"
+          body: |
+            This PR contains updates from the upstream repository.
+            
+            **Changes:**
+            - Synced with latest changes from mariolqn/humanify
+            
+            This is an automated pull request created by the sync workflow.
+          commit-message: "Sync with upstream repository"
+          delete-branch: false
