@@ -5,6 +5,7 @@ import babel from "../plugins/babel/babel.js";
 import { geminiRename } from "../plugins/gemini-rename.js";
 import { SecureLogger } from "../security/secure-logger.js";
 import { env } from "../env.js";
+import { estimateDeobfuscationCost, formatCostEstimate } from "../cost-estimator.js";
 import os from "os";
 
 export const gemini = cli()
@@ -23,18 +24,39 @@ export const gemini = cli()
     "Number of files to process in parallel",
     String(os.cpus().length)
   )
+  .option("--cost", "Estimate the cost of deobfuscation without running it")
   .argument("input", "The input file, directory, or ZIP file to deobfuscate")
   .action(async (input, opts) => {
     if (opts.verbose) {
       SecureLogger.enableVerbose();
     }
 
-    const apiKey = opts.apiKey ?? env("GEMINI_API_KEY");
     const concurrency = parseInt(opts.concurrency);
     
     // Maximum quality is now the default for Gemini 2.5+ and 1.5 Pro models
     const isAdvancedModel = opts.model.includes('gemini-2.5') || opts.model.includes('1.5-pro');
     const useAdvancedAgent = opts.advanced || (isAdvancedModel && !opts.basic);
+    
+    if (opts.cost) {
+      // Cost estimation mode
+      try {
+        SecureLogger.debug("💰 Estimating deobfuscation costs...");
+        const estimate = await estimateDeobfuscationCost(
+          input,
+          'gemini',
+          opts.model,
+          useAdvancedAgent
+        );
+        console.log(formatCostEstimate(estimate));
+        return;
+      } catch (error) {
+        console.error("❌ Cost estimation failed:", error);
+        process.exit(1);
+      }
+    }
+
+    // Regular deobfuscation mode
+    const apiKey = opts.apiKey ?? env("GEMINI_API_KEY");
     
     if (useAdvancedAgent && isAdvancedModel) {
       SecureLogger.debug("🚀 Advanced multi-agent system enabled for maximum quality (default for Gemini 2.5+)");

@@ -68,6 +68,9 @@ Reverse Machine offers three AI-powered processing modes, each optimized for dif
 
 ```bash
 reverse-machine <mode> [options] <input>
+
+# Essential: Always estimate costs first (recommended)
+reverse-machine <mode> --cost <input>
 ```
 
 ### 📁 Input Types
@@ -104,6 +107,10 @@ reverse-machine openai project.zip
 Leverage OpenAI's GPT models for superior renaming accuracy:
 
 ```bash
+# Estimate costs before processing (recommended)
+reverse-machine openai --cost script.min.js
+reverse-machine openai --cost --model="gpt-4o-mini" ./my-obfuscated-project
+
 # Process a single minified file
 reverse-machine openai --apiKey="sk-your-key" script.min.js
 
@@ -130,6 +137,10 @@ reverse-machine openai \
 Use Google's Gemini models for cost-effective processing:
 
 ```bash
+# Estimate costs before processing (recommended)
+reverse-machine gemini --cost script.min.js
+reverse-machine gemini --cost --model="gemini-2.5-flash" ./my-project
+
 # Process a single file
 reverse-machine gemini --apiKey="your-gemini-key" script.min.js
 
@@ -149,6 +160,10 @@ reverse-machine gemini obfuscated-bundle.zip
 Use Anthropic's Claude models for superior code understanding:
 
 ```bash
+# Estimate costs before processing (recommended)
+reverse-machine anthropic --cost script.min.js
+reverse-machine anthropic --cost --model="claude-3-5-haiku-latest" ./my-project
+
 # Process a single file with Claude 4 reasoning
 reverse-machine anthropic --apiKey="your-anthropic-key" --model="claude-4-opus-20250514-reasoning" script.min.js
 
@@ -339,32 +354,157 @@ archive-directory/
     └── (same structure as directory input)
 ```
 
-## 💰 Cost Estimation
+## 💰 Cost Estimation & Planning
 
-### Cloud APIs
+### 🧮 Built-in Cost Calculator
 
-For cost planning with cloud providers:
+Reverse Machine includes a comprehensive cost estimation feature to help you plan your deobfuscation budget **before** spending money:
 
 ```bash
-# Estimate tokens for a single file
-echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
+# Estimate costs for any input without processing
+reverse-machine openai --cost script.min.js
+reverse-machine gemini --cost ./my-project  
+reverse-machine anthropic --cost project.zip
 
-# For directories, costs multiply by number of processable files
-find ./my-project -name "*.js" -o -name "*.ts" | wc -l  # Count files that will be processed
+# Combine with model selection for accurate estimates
+reverse-machine openai --cost --model="gpt-4o-mini" large-project.zip
+reverse-machine anthropic --cost --model="claude-4-opus-20250514-reasoning" complex-code.js
 ```
 
-**Example costs (approximate):**
+### 📊 Cost Estimation Features
 
-| File Size | OpenAI (GPT-4o) | Gemini (1.5-Pro) | Anthropic (Claude-4) | Anthropic (Claude-3.5) |
-|-----------|----------------|-------------------|----------------------|------------------------|
-| Small (10KB) | ~$0.02 - $0.05 | ~$0.01 - $0.03 | ~$0.03 - $0.06 | ~$0.02 - $0.04 |
-| Medium (100KB) | ~$0.20 - $0.50 | ~$0.10 - $0.30 | ~$0.20 - $0.50 | ~$0.15 - $0.40 |
-| Large (1MB) | ~$2.00 - $5.00 | ~$1.00 - $3.00 | ~$2.00 - $5.00 | ~$1.50 - $4.00 |
+The `--cost` flag provides detailed cost breakdowns including:
 
-*Costs vary by model tier and usage patterns*
+- **📁 File Discovery**: Automatically scans directories and ZIP archives
+- **📏 Token Estimation**: Conservative estimates based on file sizes and minification
+- **💡 Processing Mode Analysis**: Separate estimates for basic vs advanced processing
+- **💰 Multi-Model Comparison**: Compare costs across different AI providers
+- **⚠️ Reality Warnings**: Alerts about potential cost overruns and exponential scaling
 
-**📁 Directory Processing Costs:**
-When processing directories or ZIP archives, costs are **multiplied by the number of processable files**. For example, a project with 50 JavaScript files would cost 50x the single file rate.
+### 🎯 Example Cost Estimation Output
+
+```bash
+$ reverse-machine openai --cost ./typescript-project
+
+Cost Estimation Report
+======================
+
+📁 Discovery Results:
+- Total files found: 42 JavaScript/TypeScript files
+- Total size: 2.8 MB
+- Estimated tokens: ~1,120,000 tokens
+
+💰 OpenAI GPT-4o Cost Estimates:
+- Basic Processing: $28.00
+- Advanced Processing: $156.80
+
+⚠️  Important Warnings:
+- Advanced mode may cost 2-5x more than estimates
+- Large files (>100KB) have exponential cost scaling
+- Consider using budget models for initial testing
+
+💡 Recommendations:
+- Try gpt-4o-mini first ($1.68 estimated)
+- Use basic mode for 99% of use cases
+- Test with small samples before full processing
+```
+
+### 💸 Real-World Cost Accuracy
+
+**⚠️ IMPORTANT**: Cost estimates are **conservative approximations** and real costs may be **2-5x higher** due to:
+
+- **Multi-phase processing**: Advanced mode uses exponential token growth
+- **Context accumulation**: Each phase builds on previous results
+- **Retry mechanisms**: Failed attempts still consume tokens
+- **Model-specific overhead**: Provider-specific reasoning and safety checks
+
+**Recommendation**: Always start with the smallest possible test to validate costs.
+
+### 🏷️ Current AI Model Pricing (2025)
+
+#### OpenAI Models
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Best For |
+|-------|----------------------|------------------------|----------|
+| GPT-4o | $2.50 | $10.00 | Production quality |
+| GPT-4.1 | $2.00 | $8.00 | Balanced performance |
+| GPT-4o-mini | $0.15 | $0.60 | **Budget-friendly** |
+| o1-mini | $3.00 | $12.00 | Complex reasoning |
+| o3-mini | $15.00 | $60.00 | Advanced reasoning |
+
+#### Anthropic Claude Models  
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Best For |
+|-------|----------------------|------------------------|----------|
+| Claude 4 Opus | $15.00 | $75.00 | Maximum accuracy |
+| Claude 4 Sonnet | $3.00 | $15.00 | **Balanced choice** |
+| Claude 3.5 Sonnet | $3.00 | $15.00 | Proven reliability |
+| Claude 3.5 Haiku | $0.80 | $4.00 | Fast processing |
+
+#### Google Gemini Models
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Best For |
+|-------|----------------------|------------------------|----------|
+| Gemini 2.5 Pro | $1.25 | $10.00 | High performance |
+| Gemini 2.5 Flash | $0.30 | $2.50 | **Most affordable** |
+| Gemini 1.5 Pro | $1.25 | $5.00 | Legacy compatibility |
+| Gemini 1.5 Flash | $0.075 | $0.30 | Ultra budget |
+
+### 💡 Cost Optimization Strategies
+
+#### 🎯 Choose the Right Model
+```bash
+# For budget-conscious projects
+reverse-machine openai --model="gpt-4o-mini" project.zip        # ~$5-15 typical
+reverse-machine gemini --model="gemini-2.5-flash" project.zip   # ~$3-10 typical
+
+# For production quality  
+reverse-machine anthropic --model="claude-4-sonnet-20250514" project.zip  # ~$20-60 typical
+reverse-machine openai --model="gpt-4o" project.zip                       # ~$25-75 typical
+```
+
+#### 📏 Start Small, Scale Up
+```bash
+# 1. Test with cost estimation first
+reverse-machine openai --cost ./large-project
+
+# 2. Process a small sample
+reverse-machine openai ./large-project/src/single-file.js
+
+# 3. If satisfied, process incrementally
+reverse-machine openai ./large-project/src/         # Just src folder
+reverse-machine openai ./large-project              # Full project
+```
+
+#### ⚡ Use Basic Mode by Default
+- **Basic processing**: Single-pass renaming (recommended for 99% of use cases)
+- **Advanced processing**: Multi-agent analysis (only for critical production code)
+
+```bash
+# Basic mode (default) - cost-effective
+reverse-machine openai script.min.js
+
+# Advanced mode - expensive but thorough
+reverse-machine openai --advanced script.min.js
+```
+
+### 📈 Scaling Cost Examples
+
+Real-world cost examples based on project sizes:
+
+| Project Size | Files | Estimated Cost (Budget) | Estimated Cost (Premium) | Reality Check |
+|--------------|-------|------------------------|--------------------------|---------------|
+| **Small** (1-5 files, <1MB) | 3 | $2-5 | $10-25 | Usually accurate |
+| **Medium** (10-50 files, 1-10MB) | 25 | $15-40 | $75-200 | May be 2x higher |
+| **Large** (50+ files, 10MB+) | 100 | $60-150 | $300-800 | Often 3-5x higher |
+
+**Budget Models**: OpenAI GPT-4o-mini, Gemini 2.5 Flash  
+**Premium Models**: Claude 4 Opus, OpenAI o3-mini
+
+### 🚨 Cost Safety Tips
+
+1. **Always estimate first**: Use `--cost` before processing
+2. **Set spending limits**: Configure API billing limits
+3. **Test incrementally**: Start with single files
+4. **Monitor spending**: Check API usage dashboards regularly
+5. **Use budget models**: Start with cheaper options for experimentation
 
 ## 🔧 Technical Architecture
 
