@@ -111,6 +111,36 @@ humanify gemini --model="gemini-1.5-pro" script.min.js
 **Environment Variables:**
 - `GEMINI_API_KEY`: Your Google AI Studio API key
 
+### 🧠 Anthropic Mode (Advanced Reasoning)
+
+Use Anthropic's Claude models for superior code understanding:
+
+```bash
+# Using API key directly
+humanify anthropic --apiKey="your-anthropic-key" script.min.js
+
+# Using environment variable
+export ANTHROPIC_API_KEY="your-anthropic-key"
+humanify anthropic --model="claude-3-5-sonnet-latest" script.min.js
+
+# Advanced options with specific model versions
+humanify anthropic \
+  --model="claude-3-5-sonnet-20241022" \
+  --outputDir="./humanified" \
+  --verbose \
+  script.min.js
+```
+
+**Available Anthropic Models:**
+- `claude-3-5-sonnet-latest` / `claude-3-5-sonnet-20241022` - Most capable, best for complex code
+- `claude-3-5-haiku-latest` / `claude-3-5-haiku-20241022` - Fast and efficient (default)
+- `claude-3-opus-latest` / `claude-3-opus-20240229` - Highest accuracy for challenging code
+- `claude-3-sonnet-20240229` - Balanced performance and speed
+- `claude-3-haiku-20240307` - Fastest processing
+
+**Environment Variables:**
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+
 ### 💻 Local Mode (Private & Free)
 
 Process files entirely offline using local LLMs:
@@ -198,14 +228,19 @@ output/
 For cost planning with cloud providers:
 
 ```bash
-# Estimate tokens for OpenAI/Gemini
+# Estimate tokens for OpenAI/Gemini/Anthropic
 echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
 ```
 
 **Example costs (approximate):**
-- Small file (10KB): ~$0.02 - $0.05
-- Medium file (100KB): ~$0.20 - $0.50
-- Large bundle (1MB): ~$2.00 - $5.00
+
+| File Size | OpenAI (GPT-4o) | Gemini (1.5-Pro) | Anthropic (Claude-3.5) |
+|-----------|----------------|-------------------|------------------------|
+| Small (10KB) | ~$0.02 - $0.05 | ~$0.01 - $0.03 | ~$0.02 - $0.04 |
+| Medium (100KB) | ~$0.20 - $0.50 | ~$0.10 - $0.30 | ~$0.15 - $0.40 |
+| Large (1MB) | ~$2.00 - $5.00 | ~$1.00 - $3.00 | ~$1.50 - $4.00 |
+
+*Costs vary by model tier and usage patterns*
 
 ### Local Processing
 
@@ -220,8 +255,10 @@ Local mode is completely free but requires:
 
 - **AST Processing**: Babel ecosystem for semantic-preserving transformations
 - **Bundle Analysis**: WebCrack for webpack bundle extraction
-- **AI Integration**: OpenAI API, Google Generative AI, node-llama-cpp
-- **Language Models**: Phi-3.1, Llama-3.1 with GGUF quantization
+- **AI Integration**: OpenAI API, Google Generative AI, Anthropic SDK, node-llama-cpp
+- **Language Models**: 
+  - **Cloud**: GPT-4o, Claude-3.5, Gemini-1.5
+  - **Local**: Phi-3.1, Llama-3.1 with GGUF quantization
 - **Performance**: Worker threads and GPU acceleration
 
 ### Babel Transformations

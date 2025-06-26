@@ -12,6 +12,10 @@ export interface GeminiResponse {
   newName: string;
 }
 
+export interface AnthropicResponse {
+  newName: string;
+}
+
 // Maximum JSON string length to prevent DoS
 const MAX_JSON_LENGTH = 10 * 1024 * 1024; // 10MB
 
@@ -36,6 +40,17 @@ function validateOpenAIResponse(data: any): data is OpenAIRenameResponse {
  * Validates Gemini response structure
  */
 function validateGeminiResponse(data: any): data is GeminiResponse {
+  return data &&
+    typeof data === 'object' &&
+    typeof data.newName === 'string' &&
+    data.newName.length > 0 &&
+    data.newName.length <= 100;
+}
+
+/**
+ * Validates Anthropic response structure
+ */
+function validateAnthropicResponse(data: any): data is AnthropicResponse {
   return data &&
     typeof data === 'object' &&
     typeof data.newName === 'string' &&
@@ -102,6 +117,10 @@ export function parseOpenAIResponse(jsonString: string): OpenAIRenameResponse {
 
 export function parseGeminiResponse(jsonString: string): GeminiResponse {
   return parseSecureJSON(jsonString, validateGeminiResponse, "Gemini API response");
+}
+
+export function parseAnthropicResponse(jsonString: string): AnthropicResponse {
+  return parseSecureJSON(jsonString, validateAnthropicResponse, "Anthropic API response");
 }
 
 /**

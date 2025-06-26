@@ -5,13 +5,15 @@ import { local } from "./commands/local.js";
 import { openai } from "./commands/openai.js";
 import { cli } from "./cli.js";
 import { azure } from "./commands/gemini.js";
+import { anthropic } from "./commands/anthropic.js";
 
 cli()
   .name("humanify")
-  .description("Unminify code using OpenAI's API or a local LLM")
+  .description("Unminify code using OpenAI's API, Anthropic's Claude, or a local LLM")
   .version(version)
   .addCommand(local)
   .addCommand(openai)
+  .addCommand(anthropic)
   .addCommand(azure)
   .addCommand(download())
   .parse(process.argv);

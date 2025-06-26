@@ -2,11 +2,28 @@ import { visitAllIdentifiers } from "./local-llm-rename/visit-all-identifiers.js
 import { SecureLogger } from "../security/secure-logger.js";
 import { parseGeminiResponse } from "../security/secure-json.js";
 import { showPercentage } from "../progress.js";
-import {
-  GoogleGenerativeAI,
-  ModelParams,
-  SchemaType
-} from "@google/generative-ai";
+
+// Type definitions to avoid external dependency issues
+interface ModelConfig {
+  model: string;
+  systemInstruction: string;
+  generationConfig: {
+    responseMimeType: string;
+    responseSchema: {
+      nullable: boolean;
+      description: string;
+      type: string;
+      properties: {
+        newName: {
+          type: string;
+          nullable: boolean;
+          description: string;
+        };
+      };
+      required: string[];
+    };
+  };
+}
 
 export function geminiRename({
   apiKey,
@@ -15,9 +32,20 @@ export function geminiRename({
   apiKey: string;
   model: string;
 }) {
-  const client = new GoogleGenerativeAI(apiKey);
-
   return async (code: string): Promise<string> => {
+    // Dynamic import to avoid TypeScript declaration issues
+    let GoogleGenerativeAI: any;
+    try {
+      // @ts-ignore - Dynamic import for optional dependency
+      const geminiModule = await import("@google/generative-ai");
+      GoogleGenerativeAI = geminiModule.GoogleGenerativeAI;
+    } catch (error) {
+      SecureLogger.error("Failed to import Google Generative AI module", { error });
+      return code; // Return original code if import fails
+    }
+
+    const client = new GoogleGenerativeAI(apiKey);
+
     return await visitAllIdentifiers(
       code,
       async (name, surroundingCode) => {
@@ -26,7 +54,7 @@ export function geminiRename({
 
         try {
           const model = client.getGenerativeModel(
-            toRenameParams(name, modelName)
+            createModelConfig(name, modelName)
           );
 
           const result = await model.generateContent(surroundingCode);
@@ -48,7 +76,7 @@ export function geminiRename({
   };
 }
 
-function toRenameParams(name: string, model: string): ModelParams {
+function createModelConfig(name: string, model: string): ModelConfig {
   return {
     model,
     systemInstruction: `Rename Javascript variables/function \`${name}\` to have descriptive name based on their usage in the code."`,
@@ -57,10 +85,10 @@ function toRenameParams(name: string, model: string): ModelParams {
       responseSchema: {
         nullable: false,
         description: "The new name for the variable/function",
-        type: SchemaType.OBJECT,
+        type: "object",
         properties: {
           newName: {
-            type: SchemaType.STRING,
+            type: "string",
             nullable: false,
             description: `The new name for the variable/function called \`${name}\``
           }
