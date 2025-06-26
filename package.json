@@ -29,6 +29,8 @@
     "test:minimal": "tsx --test src/plugins/visit-all-identifiers.test.ts src/security/security-tests.test.ts",
     "test:evals": "npm run build && tsx --test src/test/deobfuscation-evals.test.ts",
     "test:gpt41": "npm run build && tsx --test src/test/deobfuscation-evals.test.ts --verbose",
+    "test:advanced": "npm run build && tsx --test src/test/advanced-agent-evals.test.ts --verbose",
+    "test:quality": "npm run build && tsx --test src/test/advanced-agent-evals.test.ts src/test/deobfuscation-evals.test.ts",
     "test:all": "npm run test:coverage && npm run test:integration && npm run test:performance && npm run test:smoke && npm run test:security && npm run test:evals",
     "lint": "npm run lint:prettier && npm run lint:eslint",
     "lint:prettier": "prettier --check src/* src/**/*",

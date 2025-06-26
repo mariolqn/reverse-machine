@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { showPercentage } from "../../progress.js";
 import { SecureLogger } from "../../security/secure-logger.js";
+import { AdvancedDeobfuscationAgent } from "./advanced-deobfuscation-agent.js";
 
 // GPT-4.1 optimized configuration for maximum quality
 const GPT41_CONFIG = {
@@ -12,26 +13,73 @@ const GPT41_CONFIG = {
 
 export function openaiRename({
   apiKey,
-  model
+  model,
+  useAdvancedAgent = true // Maximum quality is the default for advanced models
 }: {
   apiKey: string;
   model: string;
+  useAdvancedAgent?: boolean;
 }) {
   const client = new OpenAI({ apiKey });
 
   return async (code: string): Promise<string> => {
-    SecureLogger.debug(`Starting GPT-4.1 optimized processing for ${code.length} characters`);
+    SecureLogger.debug(`Starting processing for ${code.length} characters with model: ${model}`);
     
-    // Check if we should use GPT-4.1 optimized approach
-    const isGPT41 = model.includes('gpt-4.1') || model.includes('o1') || model.includes('o3');
+    // Advanced models (GPT-4.1+, O-series) default to maximum quality mode
+    const isAdvancedModel = model.includes('gpt-4.1') || model.includes('o1') || model.includes('o3');
+    const shouldUseAdvanced = isAdvancedModel && useAdvancedAgent && code.length > 50; // Use advanced for non-trivial code
     
-    if (isGPT41) {
+    if (shouldUseAdvanced) {
+      return await processWithAdvancedAgent(apiKey, model, code);
+    } else if (isAdvancedModel) {
       return await processWithGPT41(client, model, code);
     } else {
       // Fallback to original approach for older models
       return await processWithLegacyModel(client, model, code);
     }
   };
+}
+
+async function processWithAdvancedAgent(
+  apiKey: string,
+  model: string,
+  code: string
+): Promise<string> {
+  SecureLogger.debug("🚀 Using Advanced Multi-Agent Deobfuscation System");
+  
+  try {
+    const agent = new AdvancedDeobfuscationAgent(apiKey, model);
+    const result = await agent.deobfuscate(code);
+    
+    // Log comprehensive analysis
+    SecureLogger.debug(`🎯 Advanced Analysis Complete:`);
+    SecureLogger.debug(`   • Confidence: ${(result.confidence * 100).toFixed(1)}%`);
+    SecureLogger.debug(`   • Syntax Score: ${result.analysis.syntaxScore}/10`);
+    SecureLogger.debug(`   • Semantic Score: ${result.analysis.semanticScore}/10`);
+    SecureLogger.debug(`   • Consistency Score: ${result.analysis.consistencyScore}/10`);
+    SecureLogger.debug(`   • Readability Score: ${result.analysis.readabilityScore}/10`);
+    SecureLogger.debug(`   • Processing Time: ${result.processingTime}ms`);
+    SecureLogger.debug(`   • Variables Mapped: ${result.variableMappings.length}`);
+    
+    // Log variable mappings for debugging
+    result.variableMappings.forEach(mapping => {
+      SecureLogger.debug(`   • ${mapping.original} → ${mapping.renamed} (${(mapping.confidence * 100).toFixed(1)}%)`);
+    });
+    
+    if (result.improvements.length > 0) {
+      SecureLogger.debug(`🔧 Improvement Suggestions:`);
+      result.improvements.forEach(improvement => {
+        SecureLogger.debug(`   • ${improvement}`);
+      });
+    }
+    
+    return result.deobfuscatedCode;
+    
+  } catch (error) {
+    SecureLogger.debug(`❌ Advanced agent failed: ${error}, falling back to standard GPT-4.1`);
+    const client = new OpenAI({ apiKey });
+    return await processWithGPT41(client, model, code);
+  }
 }
 
 async function processWithGPT41(

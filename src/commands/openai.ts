@@ -9,8 +9,10 @@ import os from "os";
 
 export const openai = cli()
   .name("openai")
-  .description("Use OpenAI's API to unminify code")
-  .option("-m, --model <model>", "The model to use (gpt-4o-mini, gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, o1, o3, o3-mini, o4-mini)", "gpt-4o-mini")
+  .description("Use OpenAI's API to unminify code with maximum quality (GPT-4.1 default)")
+  .option("-m, --model <model>", "The model to use (gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4.1-mini, gpt-4.1-nano, o1, o3, o3-mini, o4-mini)", "gpt-4.1")
+  .option("--advanced", "Force enable advanced multi-agent system (enabled by default for GPT-4.1+)", false)
+  .option("--basic", "Use basic single-agent approach for speed over quality", false)
   .option("-o, --outputDir <output>", "The output directory", "output")
   .option(
     "-k, --apiKey <apiKey>",
@@ -30,10 +32,23 @@ export const openai = cli()
 
     const apiKey = opts.apiKey ?? env("OPENAI_API_KEY");
     const concurrency = parseInt(opts.concurrency);
+    
+    // Maximum quality is now the default for GPT-4.1+ models
+    const isAdvancedModel = opts.model.includes('gpt-4.1') || opts.model.includes('o1') || opts.model.includes('o3');
+    const useAdvancedAgent = opts.advanced || (isAdvancedModel && !opts.basic);
+    
+    if (useAdvancedAgent && isAdvancedModel) {
+      SecureLogger.debug("🚀 Advanced multi-agent system enabled for maximum quality (default for GPT-4.1+)");
+    } else if (opts.basic) {
+      SecureLogger.debug("⚡ Basic single-agent mode enabled for speed (--basic flag used)");
+    } else {
+      SecureLogger.debug("🔄 Standard processing mode enabled");
+    }
+    
     await unminifyParallel(
       filename,
       opts.outputDir,
-      [babel, openaiRename({ apiKey, model: opts.model }), prettier],
+      [babel, openaiRename({ apiKey, model: opts.model, useAdvancedAgent }), prettier],
       concurrency
     );
   });
