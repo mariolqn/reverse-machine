@@ -595,8 +595,8 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 ## 📞 Support & Community
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/reverse-machine/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/reverse-machine/discussions)
+- **Issues**: [GitHub Issues](https://github.com/mariolqn/reverse-machine/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/mariolqn/reverse-machine/discussions)
 - **Blog**: [Introduction Blog Post](https://thejunkland.com/blog/using-llms-to-reverse-javascript-minification)
 
 ---
