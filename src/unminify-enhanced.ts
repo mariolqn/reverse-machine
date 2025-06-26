@@ -4,6 +4,7 @@ import { SecureLogger } from "./security/secure-logger.js";
 import { setupProcessingContext, ProcessingContext, isProcessableFile } from "./input-handler.js";
 import { webcrack } from "./plugins/webcrack.js";
 import { parse } from "@babel/parser";
+import { progressManager } from "./progress.js";
 
 export async function unminifyEnhanced(
   inputPath: string,
@@ -22,9 +23,14 @@ export async function unminifyEnhanced(
     });
     
     if (context.inputType === 'file') {
+      const fileName = path.basename(context.files[0]);
+      progressManager.startSingleFileProcessing(fileName);
       await processSingleFile(context, plugins);
+      progressManager.finish();
     } else {
+      progressManager.startMultiFileProcessing(context.files.length);
       await processMultipleFiles(context, plugins, concurrency);
+      progressManager.finish();
     }
     
     SecureLogger.debug(`Enhanced unminification completed. Output: ${context.outputPath}`);
@@ -46,8 +52,12 @@ async function processSingleFile(
   
   if (code.trim().length === 0) {
     SecureLogger.debug(`Skipping empty file ${filePath}`);
+    progressManager.updateCurrentFileProgress(1);
     return;
   }
+  
+  // Update progress at each stage
+  progressManager.updateCurrentFileProgress(0.1);
   
   // For single files, check if it's a bundled/minified file that needs webcrack
   let needsWebcrack = false;
@@ -60,13 +70,17 @@ async function processSingleFile(
     needsWebcrack = true;
   }
   
+  progressManager.updateCurrentFileProgress(0.2);
+  
   if (needsWebcrack) {
     SecureLogger.debug("File appears to be bundled/heavily minified, using webcrack");
-    await processBundledFile(filePath, plugins);
+    await processBundledFile(filePath, plugins, true);
   } else {
     SecureLogger.debug("File appears to be regular code, processing directly");
-    await processRegularFile(filePath, plugins);
+    await processRegularFile(filePath, plugins, true);
   }
+  
+  progressManager.updateCurrentFileProgress(1);
 }
 
 async function processMultipleFiles(
@@ -76,61 +90,90 @@ async function processMultipleFiles(
 ) {
   SecureLogger.debug(`Processing ${context.files.length} files with concurrency ${concurrency}`);
   
+  let completedFiles = 0;
+  
   const processFile = async (filePath: string, index: number) => {
     try {
-      SecureLogger.debug(`Processing file ${index + 1}/${context.files.length}: ${path.basename(filePath)}`);
+      const fileName = path.basename(filePath);
+      progressManager.setCurrentFile(fileName);
+      
+      SecureLogger.debug(`Processing file ${index + 1}/${context.files.length}: ${fileName}`);
       
       const code = await fs.readFile(filePath, "utf-8");
       
       if (code.trim().length === 0) {
         SecureLogger.debug(`Skipping empty file ${filePath}`);
+        progressManager.completeCurrentFile();
         return;
       }
       
       // For files in directories, process them directly (they're usually not bundled)
-      await processRegularFile(filePath, plugins);
+      await processRegularFile(filePath, plugins, false);
+      
+      progressManager.completeCurrentFile();
       
     } catch (error) {
       console.error(`Error processing file ${filePath}:`, error);
+      progressManager.completeCurrentFile();
     }
   };
   
   // Process files in batches
-  const batchSize = Math.ceil(context.files.length / concurrency);
+  const batchSize = Math.max(1, Math.ceil(context.files.length / concurrency));
   const batches = [];
   for (let i = 0; i < context.files.length; i += batchSize) {
     batches.push(context.files.slice(i, i + batchSize));
   }
   
-  await Promise.all(
-    batches.map((batch) =>
-      Promise.all(batch.map((filePath, index) => processFile(filePath, index)))
-    )
-  );
+  for (const batch of batches) {
+    await Promise.all(batch.map((filePath, index) => processFile(filePath, index)));
+  }
 }
 
 async function processBundledFile(
   filePath: string,
-  plugins: ((_code: string) => Promise<string>)[]
+  plugins: ((_code: string) => Promise<string>)[],
+  isSingleFile: boolean = false
 ) {
   const code = await fs.readFile(filePath, "utf-8");
   const outputDir = path.dirname(filePath);
   
+  // Update progress for webcrack stage
+  if (isSingleFile) {
+    progressManager.updateCurrentFileProgress(0.3);
+  }
+  
   // Use webcrack to extract the bundled file
   const extractedFiles = await webcrack(code, outputDir);
   
+  if (isSingleFile) {
+    progressManager.updateCurrentFileProgress(0.5);
+  }
+  
   for (let i = 0; i < extractedFiles.length; i++) {
     const file = extractedFiles[i];
-    await processRegularFile(file.path, plugins);
+    
+    if (isSingleFile) {
+      // For single file processing, show progress through the extracted files
+      const fileProgress = 0.5 + (i / extractedFiles.length) * 0.4;
+      progressManager.updateCurrentFileProgress(fileProgress);
+    }
+    
+    await processRegularFile(file.path, plugins, false);
   }
   
   // Remove the original copied file since webcrack created the extracted files
   await fs.unlink(filePath);
+  
+  if (isSingleFile) {
+    progressManager.updateCurrentFileProgress(0.95);
+  }
 }
 
 async function processRegularFile(
   filePath: string,
-  plugins: ((_code: string) => Promise<string>)[]
+  plugins: ((_code: string) => Promise<string>)[],
+  updateProgress: boolean = false
 ) {
   const code = await fs.readFile(filePath, "utf-8");
   let formattedCode = code;
@@ -138,13 +181,27 @@ async function processRegularFile(
   try {
     // Only process files that contain JavaScript-like code
     if (shouldProcessFile(filePath, code)) {
-      for (const plugin of plugins) {
+      
+      for (let i = 0; i < plugins.length; i++) {
+        const plugin = plugins[i];
+        
+        // Update progress through plugin processing
+        if (updateProgress) {
+          const pluginProgress = 0.2 + (i / plugins.length) * 0.7;
+          progressManager.updateCurrentFileProgress(pluginProgress);
+        }
+        
         try {
           formattedCode = await plugin(formattedCode);
         } catch (pluginError) {
           console.error(`Error in plugin for file ${filePath}:`, pluginError);
           // Continue with the next plugin
         }
+      }
+      
+      // Final progress update before file completion
+      if (updateProgress) {
+        progressManager.updateCurrentFileProgress(0.9);
       }
       
       // Attempt to parse the final code for JavaScript files
@@ -169,6 +226,10 @@ async function processRegularFile(
     });
     
     await fs.writeFile(filePath, formattedCode);
+    
+    if (updateProgress) {
+      progressManager.updateCurrentFileProgress(0.95);
+    }
     
   } catch (error) {
     console.error(`Error processing file ${filePath}:`, error);

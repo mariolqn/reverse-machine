@@ -1,7 +1,7 @@
 import { visitAllIdentifiers } from "./visit-all-identifiers.js";
 import { SecureLogger } from "../security/secure-logger.js";
 import { parseGeminiResponse } from "../security/secure-json.js";
-import { showPercentage } from "../progress.js";
+import { progressManager } from "../progress.js";
 
 // Gemini 2.5 Pro optimized configuration for maximum quality
 const GEMINI25_CONFIG = {
@@ -81,19 +81,25 @@ async function processWithAdvancedAgent(
     const client = new GoogleGenerativeAI(apiKey);
     
     // Step 1: Semantic Analysis Phase
+    progressManager.updateCurrentFileProgress(0.3);
     const semanticAnalysis = await performSemanticAnalysis(client, model, code);
     
     // Step 2: Pattern Recognition Phase
+    progressManager.updateCurrentFileProgress(0.4);
     const patternAnalysis = await performPatternRecognition(client, model, code, semanticAnalysis);
     
     // Step 3: Intelligent Variable Naming Phase
+    progressManager.updateCurrentFileProgress(0.6);
     const namingResult = await performIntelligentNaming(client, model, code, semanticAnalysis, patternAnalysis);
     
     // Step 4: Code Transformation Phase
+    progressManager.updateCurrentFileProgress(0.7);
     const transformedCode = await performCodeTransformation(client, model, code, namingResult);
     
     // Step 5: Quality Assurance and Verification
+    progressManager.updateCurrentFileProgress(0.8);
     const finalResult = await performQualityAssurance(client, model, transformedCode, code);
+    progressManager.updateCurrentFileProgress(0.9);
     
     // Log comprehensive analysis
     SecureLogger.debug(`🎯 Advanced Analysis Complete:`);
@@ -144,13 +150,17 @@ async function processWithGemini25(
     const client = new GoogleGenerativeAI(apiKey);
     
     // Step 1: Main deobfuscation with reasoning
+    progressManager.updateCurrentFileProgress(0.3);
     const deobfuscatedResult = await performDeobfuscation(client, model, code);
     
     // Step 2: Self-verification pass
+    progressManager.updateCurrentFileProgress(0.6);
     const verifiedResult = await performVerification(client, model, code, deobfuscatedResult);
     
     // Step 3: Final quality check
+    progressManager.updateCurrentFileProgress(0.8);
     const finalResult = await performQualityCheck(client, model, verifiedResult);
+    progressManager.updateCurrentFileProgress(0.9);
     
     SecureLogger.debug("Gemini 2.5 processing completed successfully");
     return finalResult;
@@ -408,7 +418,7 @@ async function processWithLegacyModel(
         return name; // Fallback to original name
       }
     },
-    showPercentage
+    (progress) => progressManager.updateCurrentFileProgress(progress)
   );
 }
 

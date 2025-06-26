@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { showPercentage } from "../../progress.js";
+import { progressManager } from "../../progress.js";
 import { SecureLogger } from "../../security/secure-logger.js";
 import { AdvancedDeobfuscationAgent } from "./advanced-deobfuscation-agent.js";
 
@@ -48,8 +48,11 @@ async function processWithAdvancedAgent(
   SecureLogger.debug("🚀 Using Advanced Multi-Agent Deobfuscation System");
   
   try {
+    progressManager.updateCurrentFileProgress(0.3);
     const agent = new AdvancedDeobfuscationAgent(apiKey, model);
+    progressManager.updateCurrentFileProgress(0.5);
     const result = await agent.deobfuscate(code);
+    progressManager.updateCurrentFileProgress(0.9);
     
     // Log comprehensive analysis
     SecureLogger.debug(`🎯 Advanced Analysis Complete:`);
@@ -91,13 +94,17 @@ async function processWithGPT41(
   
   try {
     // Step 1: Main deobfuscation with chain-of-thought
+    progressManager.updateCurrentFileProgress(0.3);
     const deobfuscatedResult = await performDeobfuscation(client, model, code);
     
     // Step 2: Self-verification pass
+    progressManager.updateCurrentFileProgress(0.6);
     const verifiedResult = await performVerification(client, model, code, deobfuscatedResult);
     
     // Step 3: Final quality check
+    progressManager.updateCurrentFileProgress(0.8);
     const finalResult = await performQualityCheck(client, model, verifiedResult);
+    progressManager.updateCurrentFileProgress(0.9);
     
     SecureLogger.debug("GPT-4.1 processing completed successfully");
     return finalResult;
