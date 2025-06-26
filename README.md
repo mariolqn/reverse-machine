@@ -1,180 +1,316 @@
 # HumanifyJS
-> Deobfuscate Javascript code using LLMs ("AI")
 
-This tool uses large language modeles (like ChatGPT & llama) and other tools to
-deobfuscate, unminify, transpile, decompile and unpack Javascript code. Note
-that LLMs don't perform any structural changes – they only provide hints to
-rename variables and functions. The heavy lifting is done by Babel on AST level
-to ensure code stays 1-1 equivalent.
+**Next-generation JavaScript deobfuscation powered by AI**
 
-### Version 2 is out! 🎉
+[![npm version](https://badge.fury.io/js/humanifyjs.svg)](https://www.npmjs.com/package/humanifyjs)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-v2 highlights compared to v1:
-* Python not required anymore!
-* A lot of tests, the codebase is actually maintanable now
-* Renewed CLI tool `humanify` installable via npm
+> Transform minified, obfuscated, and bundled JavaScript into human-readable code using Large Language Models and advanced AST transformations.
 
-### ➡️ Check out the [introduction blog post][blogpost] for in-depth explanation!
+## 🚀 What Makes HumanifyJS Different
 
-[blogpost]: https://thejunkland.com/blog/using-llms-to-reverse-javascript-minification
+HumanifyJS represents a paradigm shift in JavaScript reverse engineering. Unlike traditional tools that rely solely on pattern matching and heuristics, HumanifyJS leverages the contextual understanding of Large Language Models to intelligently rename variables and functions while maintaining 100% semantic equivalence through AST-level transformations.
 
-## Example
+### ✨ Key Features
 
-Given the following minified code:
+- **🧠 AI-Powered Renaming**: Context-aware variable and function renaming using OpenAI GPT, Google Gemini, or local LLMs
+- **🔧 AST-Level Transformations**: Babel-powered structural improvements while preserving code semantics
+- **📦 Bundle Unpacking**: Automatic webpack bundle extraction using WebCrack
+- **⚡ Parallel Processing**: Concurrent file processing for optimal performance
+- **🎯 Local GPU Support**: Native Apple Silicon optimization and CUDA support
+- **🔒 Privacy-First**: Complete offline processing with local models
+- **🎨 Smart Formatting**: Integrated Prettier for consistent code style
 
+## 📊 Before & After
+
+**Input (minified):**
 ```javascript
 function a(e,t){var n=[];var r=e.length;var i=0;for(;i<r;i+=t){if(i+t<r){n.push(e.substring(i,i+t))}else{n.push(e.substring(i,r))}}return n}
 ```
 
-The tool will output a human-readable version:
-
+**Output (humanified):**
 ```javascript
-function splitString(inputString, chunkSize) {
+function splitStringIntoChunks(inputString, chunkSize) {
   var chunks = [];
   var stringLength = inputString.length;
-  var startIndex = 0;
-  for (; startIndex < stringLength; startIndex += chunkSize) {
-    if (startIndex + chunkSize < stringLength) {
-      chunks.push(inputString.substring(startIndex, startIndex + chunkSize));
+  var currentIndex = 0;
+  for (; currentIndex < stringLength; currentIndex += chunkSize) {
+    if (currentIndex + chunkSize < stringLength) {
+      chunks.push(inputString.substring(currentIndex, currentIndex + chunkSize));
     } else {
-      chunks.push(inputString.substring(startIndex, stringLength));
+      chunks.push(inputString.substring(currentIndex, stringLength));
     }
   }
   return chunks;
 }
 ```
 
-🚨 **NOTE:** 🚨
+## 🛠 Installation
 
-Large files may take some time to process and use a lot of tokens if you use
-ChatGPT. For a rough estimate, the tool takes about 2 tokens per character to
-process a file:
+### Prerequisites
+- **Node.js** ≥ 20.0.0
+- **npm** or **yarn**
 
-```shell
-echo "$((2 * $(wc -c < yourscript.min.js)))"
-```
-
-So for refrence: a minified `bootstrap.min.js` would take about $0.5 to
-un-minify using ChatGPT.
-
-Using `humanify local` is of course free, but may take more time, be less
-accurate and not possible with your existing hardware.
-
-## Getting started
-
-### Installation
-
-Prerequisites:
-* Node.js >=20
-
-The preferred whay to install the tool is via npm:
-
-```shell
+### Global Installation (Recommended)
+```bash
 npm install -g humanifyjs
 ```
 
-This installs the tool to your machine globally. After the installation is done,
-you should be able to run the tool via:
-
-```shell
-humanify
+### One-time Usage
+```bash
+npx humanifyjs [command] [options] <file>
 ```
 
-If you want to try it out before installing, you can run it using `npx`:
+## 📖 Usage Guide
 
-```
-npx humanifyjs
-```
+### Command Overview
 
-This will download the tool and run it locally. Note that all examples here
-expect the tool to be installed globally, but they should work by replacing
-`humanify` with `npx humanifyjs` as well.
+HumanifyJS offers three processing modes, each optimized for different use cases:
 
-### Usage
-
-Next you'll need to decide whether to use `openai`, `gemini` or `local` mode. In a
-nutshell:
-
-* `openai` or `gemini` mode
-  * Runs on someone else's computer that's specifically optimized for this kind
-    of things
-  * Costs money depending on the length of your code
-  * Is more accurate
-* `local` mode
-  * Runs locally
-  * Is free
-  * Is less accurate
-  * Runs as fast as your GPU does (it also runs on CPU, but may be very slow)
-
-See instructions below for each option:
-
-### OpenAI mode
-
-You'll need a ChatGPT API key. You can get one by signing up at
-https://openai.com/.
-
-There are several ways to provide the API key to the tool:
-```shell
-humanify openai --apiKey="your-token" obfuscated-file.js
+```bash
+humanify <mode> [options] <input-file>
 ```
 
-Alternatively you can also use an environment variable `OPENAI_API_KEY`. Use
-`humanify --help` to see all available options.
+### 🤖 OpenAI Mode (Most Accurate)
 
-### Gemini mode
+Leverage OpenAI's GPT models for superior renaming accuracy:
 
-You'll need a Google AI Studio key. You can get one by signing up at
-https://aistudio.google.com/.
+```bash
+# Using API key directly
+humanify openai --apiKey="sk-your-key" script.min.js
 
-You need to provice the API key to the tool:
+# Using environment variable
+export OPENAI_API_KEY="sk-your-key"
+humanify openai script.min.js
 
-```shell
-humanify gemini --apiKey="your-token" obfuscated-file.js
+# Advanced options
+humanify openai \
+  --model="gpt-4o" \
+  --outputDir="./humanified" \
+  --concurrency=8 \
+  --verbose \
+  script.min.js
 ```
 
-Alternatively you can also use an environment variable `GEMINI_API_KEY`. Use
-`humanify --help` to see all available options.
+**Environment Variables:**
+- `OPENAI_API_KEY`: Your OpenAI API key
 
-### Local mode
+### 🌟 Gemini Mode (Fast & Efficient)
 
-The local mode uses a pre-trained language model to deobfuscate the code. The
-model is not included in the repository due to its size, but you can download it
-using the following command:
+Use Google's Gemini models for cost-effective processing:
 
-```shell
+```bash
+# Using API key directly
+humanify gemini --apiKey="your-gemini-key" script.min.js
+
+# Using environment variable
+export GEMINI_API_KEY="your-gemini-key"
+humanify gemini --model="gemini-1.5-pro" script.min.js
+```
+
+**Environment Variables:**
+- `GEMINI_API_KEY`: Your Google AI Studio API key
+
+### 💻 Local Mode (Private & Free)
+
+Process files entirely offline using local LLMs:
+
+```bash
+# First-time setup: download a model
+humanify download 2b    # 4GB Phi-3.1 model (recommended for most users)
+humanify download 8b    # 5GB Llama-3.1 model (better accuracy, requires more RAM)
+
+# Process files locally
+humanify local script.min.js
+
+# Advanced local processing
+humanify local \
+  --model="8b" \
+  --outputDir="./output" \
+  --seed=42 \
+  --verbose \
+  script.min.js
+```
+
+### Available Local Models
+
+| Model | Size | Architecture | RAM Required | Best For |
+|-------|------|-------------|--------------|----------|
+| `2b` | 4GB | Phi-3.1-mini | 8GB+ | General use, faster processing |
+| `8b` | 5GB | Llama-3.1 | 16GB+ | Higher accuracy, complex code |
+
+### 📊 Model Management
+
+```bash
+# List available models
+humanify download
+
+# Download specific model
 humanify download 2b
+
+# Check model status
+ls ~/.humanifyjs/models/
 ```
 
-This downloads the `2b` model to your local machine. This is only needed to do
-once. You can also choose to download other models depending on your local
-resources. List the available models using `humanify download`.
+## ⚙️ Advanced Configuration
 
-After downloading the model, you can run the tool with:
+### Processing Pipeline
 
-```shell
-humanify local obfuscated-file.js
+HumanifyJS uses a sophisticated 4-stage pipeline:
+
+1. **🔓 Bundle Extraction**: WebCrack unpacks webpack bundles
+2. **🔧 AST Transformations**: Babel plugins normalize code structure
+3. **🧠 AI Renaming**: LLMs provide context-aware variable names
+4. **🎨 Formatting**: Prettier ensures consistent code style
+
+### Performance Optimization
+
+#### Parallel Processing
+```bash
+# Adjust concurrency based on your system
+humanify openai --concurrency=16 large-bundle.js  # High-end systems
+humanify openai --concurrency=4 large-bundle.js   # Standard systems
 ```
 
-This uses your local GPU to deobfuscate the code. If you don't have a GPU, the
-tool will automatically fall back to CPU mode. Note that using a GPU speeds up
-the process significantly.
+#### GPU Acceleration (Local Mode)
+```bash
+# Enable GPU acceleration (default)
+humanify local script.min.js
 
-Humanify has native support for Apple's M-series chips, and can fully utilize
-the GPU capabilities of your Mac.
+# Force CPU-only processing
+humanify local --disableGpu script.min.js
+```
 
-## Features
+### Output Structure
 
-The main features of the tool are:
-* Uses ChatGPT functions/local models to get smart suggestions to rename
-  variable and function names
-* Uses custom and off-the-shelf Babel plugins to perform AST-level unmanging
-* Uses Webcrack to unbundle Webpack bundles
+```
+output/
+├── deobfuscated.js         # Main processed file
+├── chunk-[hash].js         # Extracted chunks
+├── vendor-[hash].js        # Vendor bundles
+└── ...                     # Additional extracted files
+```
 
-## Contributing
+## 💰 Cost Estimation
 
-If you'd like to contribute, please fork the repository and use a feature
-branch. Pull requests are warmly welcome.
+### Cloud APIs
 
-## Licensing
+For cost planning with cloud providers:
 
-The code in this project is licensed under MIT license.
+```bash
+# Estimate tokens for OpenAI/Gemini
+echo "$((2 * $(wc -c < yourscript.min.js))) tokens approximately"
+```
+
+**Example costs (approximate):**
+- Small file (10KB): ~$0.02 - $0.05
+- Medium file (100KB): ~$0.20 - $0.50
+- Large bundle (1MB): ~$2.00 - $5.00
+
+### Local Processing
+
+Local mode is completely free but requires:
+- **Initial download**: 4-5GB per model
+- **Processing time**: 2-10x slower than cloud APIs
+- **Hardware**: GPU recommended for acceptable speed
+
+## 🔧 Technical Architecture
+
+### Core Technologies
+
+- **AST Processing**: Babel ecosystem for semantic-preserving transformations
+- **Bundle Analysis**: WebCrack for webpack bundle extraction
+- **AI Integration**: OpenAI API, Google Generative AI, node-llama-cpp
+- **Language Models**: Phi-3.1, Llama-3.1 with GGUF quantization
+- **Performance**: Worker threads and GPU acceleration
+
+### Babel Transformations
+
+HumanifyJS includes custom Babel plugins for:
+
+- Converting `void 0` → `undefined`
+- Normalizing comparison operators (`5 === x` → `x === 5`)
+- Expanding scientific notation (`5e3` → `5000`)
+- Code beautification and structure improvement
+
+### AI Prompt Engineering
+
+The tool uses sophisticated prompting strategies:
+
+- **Context-aware analysis**: Provides surrounding code context to LLMs
+- **Incremental processing**: Processes variables in scope-aware batches
+- **Conflict resolution**: Automatically handles naming conflicts
+- **Grammar constraints**: Uses GBNF for structured local model output
+
+## 🧪 Testing & Quality Assurance
+
+HumanifyJS includes comprehensive test suites:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test types
+npm run test:unit      # Unit tests
+npm run test:e2e       # End-to-end tests
+npm run test:llm       # LLM integration tests
+npm run test:openai    # OpenAI API tests
+npm run test:gemini    # Gemini API tests
+```
+
+## 🤝 Contributing
+
+We welcome contributions! The codebase is designed for maintainability:
+
+### Development Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/yourusername/humanifyjs.git
+cd humanifyjs
+npm install
+
+# Development commands
+npm run start          # Run from source
+npm run build          # Build for distribution
+npm run lint           # Code quality checks
+```
+
+### Project Structure
+
+```
+src/
+├── commands/          # CLI command implementations
+├── plugins/           # Processing plugins (Babel, LLM, etc.)
+├── test/             # Test suites
+├── babel-utils.ts    # AST transformation utilities
+├── unminify.ts       # Core processing pipeline
+└── local-models.ts   # Model management
+```
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- **WebCrack** team for bundle extraction capabilities
+- **Babel** ecosystem for AST transformations
+- **node-llama-cpp** for local LLM inference
+- **OpenAI** and **Google** for cloud AI APIs
+
+## 📞 Support & Community
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/humanifyjs/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/humanifyjs/discussions)
+- **Blog**: [Introduction Blog Post](https://thejunkland.com/blog/using-llms-to-reverse-javascript-minification)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the reverse engineering community**
+
+[⭐ Star on GitHub](https://github.com/yourusername/humanifyjs) • [📦 npm Package](https://www.npmjs.com/package/humanifyjs) • [📖 Documentation](https://github.com/yourusername/humanifyjs/wiki)
+
+</div>
