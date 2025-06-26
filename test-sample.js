@@ -1,0 +1,1 @@
+function a(e,t){var n=[];for(var r=0;r<e.length;r++){n.push(e[r]+t);}return n;}var b=a([1,2,3],10);console.log(b); 
