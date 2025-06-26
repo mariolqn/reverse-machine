@@ -2,7 +2,7 @@
 
 **Next-generation JavaScript deobfuscation powered by AI**
 
-[![npm version](https://badge.fury.io/js/reverse-machine.svg)](https://www.npmjs.com/package/reverse-machine)
+[![npm version](https://badge.fury.io/js/reverse-machine.svg?v=2.1.2)](https://www.npmjs.com/package/reverse-machine)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Transform minified, obfuscated, and bundled JavaScript into human-readable code using Large Language Models and advanced AST transformations.
