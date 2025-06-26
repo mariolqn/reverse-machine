@@ -605,6 +605,6 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 **Made with ❤️ for the reverse engineering community**
 
-[⭐ Star on GitHub](https://github.com/yourusername/reverse-machine) • [📦 npm Package](https://www.npmjs.com/package/reverse-machine) • [📖 Documentation](https://github.com/yourusername/reverse-machine/wiki)
+[⭐ Star on GitHub](https://github.com/mariolqn/reverse-machine) • [📦 npm Package](https://www.npmjs.com/package/reverse-machine) • [📖 Documentation](https://github.com/mariolqn/reverse-machine/wiki)
 
 </div>
