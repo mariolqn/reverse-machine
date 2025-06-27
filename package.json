@@ -64,7 +64,7 @@
     "@anthropic-ai/sdk": "^0.27.3",
     "@babel/core": "^7.25.2",
     "@babel/types": "^7.25.2",
-    "@google/generative-ai": "^0.20.0",
+    "@google/generative-ai": "^0.24.1",
     "@types/babel__core": "^7.20.5",
     "babel-plugin-transform-beautifier": "^0.1.0",
     "commander": "^12.1.0",
