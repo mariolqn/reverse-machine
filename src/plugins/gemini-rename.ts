@@ -195,9 +195,20 @@ async function performSemanticAnalysis(client: any, model: string, code: string)
 }`
   );
   
-  const response = JSON.parse(result.response.text());
-  SecureLogger.debug(`🧠 Semantic Analysis: ${response.description}`);
-  return response;
+  try {
+    const response = JSON.parse(result.response.text());
+    SecureLogger.debug(`🧠 Semantic Analysis: ${response.description}`);
+    return response;
+  } catch (error) {
+    SecureLogger.debug(`🧠 Semantic Analysis JSON parsing failed: ${error}, using fallback`);
+    return {
+      description: "Code analysis failed due to parsing error",
+      algorithm: "unknown",
+      dataFlow: "unable to determine",
+      variables: [],
+      confidence: 0.1
+    };
+  }
 }
 
 async function performPatternRecognition(client: any, model: string, code: string, semanticAnalysis: any): Promise<any> {
@@ -217,9 +228,18 @@ async function performPatternRecognition(client: any, model: string, code: strin
     `Identify patterns in this code:\n\n${code}\n\nSemantic context: ${JSON.stringify(semanticAnalysis)}\n\nProvide JSON analysis with pattern details.`
   );
   
-  const response = JSON.parse(result.response.text());
-  SecureLogger.debug(`🔍 Pattern Recognition: Found ${response.patterns?.length || 0} patterns`);
-  return response;
+  try {
+    const response = JSON.parse(result.response.text());
+    SecureLogger.debug(`🔍 Pattern Recognition: Found ${response.patterns?.length || 0} patterns`);
+    return response;
+  } catch (error) {
+    SecureLogger.debug(`🔍 Pattern Recognition JSON parsing failed: ${error}, using fallback`);
+    return {
+      patterns: [],
+      minificationIndicators: ["parsing_failed"],
+      structuralAnalysis: "unable to analyze due to parsing error"
+    };
+  }
 }
 
 async function performIntelligentNaming(client: any, model: string, code: string, semanticAnalysis: any, patternAnalysis: any): Promise<any> {
@@ -237,9 +257,19 @@ async function performIntelligentNaming(client: any, model: string, code: string
 
   const result = await geminiModel.generateContent(createNamingPrompt(code, semanticAnalysis, patternAnalysis));
   
-  const response = JSON.parse(result.response.text());
-  SecureLogger.debug(`🏷️ Generated ${response.mappings?.length || 0} variable mappings`);
-  return response;
+  try {
+    const response = JSON.parse(result.response.text());
+    SecureLogger.debug(`🏷️ Generated ${response.mappings?.length || 0} variable mappings`);
+    return response;
+  } catch (error) {
+    SecureLogger.debug(`🏷️ Intelligent Naming JSON parsing failed: ${error}, using fallback`);
+    return {
+      mappings: [],
+      namingStrategy: "fallback due to parsing error",
+      consistency: "unable to determine",
+      confidence: 0.1
+    };
+  }
 }
 
 async function performCodeTransformation(client: any, model: string, code: string, namingResult: any): Promise<string> {
@@ -257,9 +287,14 @@ async function performCodeTransformation(client: any, model: string, code: strin
 
   const result = await geminiModel.generateContent(createTransformationRequest(code, namingResult));
   
-  const response = JSON.parse(result.response.text());
-  SecureLogger.debug("🔄 Code transformation completed");
-  return response.transformedCode || code;
+  try {
+    const response = JSON.parse(result.response.text());
+    SecureLogger.debug("🔄 Code transformation completed");
+    return response.transformedCode || code;
+  } catch (error) {
+    SecureLogger.debug(`🔄 Code Transformation JSON parsing failed: ${error}, returning original code`);
+    return code;
+  }
 }
 
 async function performQualityAssurance(client: any, model: string, transformedCode: string, originalCode: string): Promise<any> {
@@ -277,9 +312,22 @@ async function performQualityAssurance(client: any, model: string, transformedCo
 
   const result = await geminiModel.generateContent(createQualityAssuranceRequest(transformedCode, originalCode));
   
-  const response = JSON.parse(result.response.text());
-  SecureLogger.debug(`✅ Quality Score: ${response.qualityScore}/10`);
-  return { ...response, finalCode: response.finalCode || transformedCode };
+  try {
+    const response = JSON.parse(result.response.text());
+    SecureLogger.debug(`✅ Quality Score: ${response.qualityScore}/10`);
+    return { ...response, finalCode: response.finalCode || transformedCode };
+  } catch (error) {
+    SecureLogger.debug(`✅ Quality Assurance JSON parsing failed: ${error}, using fallback`);
+    return {
+      qualityScore: 5,
+      finalCode: transformedCode,
+      improvements: ["JSON parsing failed, unable to assess quality"],
+      syntaxScore: 5,
+      semanticScore: 5,
+      consistencyScore: 5,
+      readabilityScore: 5
+    };
+  }
 }
 
 async function performDeobfuscation(client: any, model: string, code: string): Promise<string> {
@@ -295,19 +343,24 @@ async function performDeobfuscation(client: any, model: string, code: string): P
 
   const result = await geminiModel.generateContent(createDeobfuscationPrompt(code));
   
-  const response = JSON.parse(result.response.text());
-  
-  // Log the analysis for debugging
-  SecureLogger.debug(`Gemini 2.5 Analysis: ${response.analysis}`);
-  
-  // Log variable mappings
-  if (response.variableMappings) {
-    response.variableMappings.forEach((mapping: any) => {
-      SecureLogger.debug(`Renamed ${mapping.oldName} to ${mapping.newName} (${mapping.purpose})`);
-    });
+  try {
+    const response = JSON.parse(result.response.text());
+    
+    // Log the analysis for debugging
+    SecureLogger.debug(`Gemini 2.5 Analysis: ${response.analysis}`);
+    
+    // Log variable mappings
+    if (response.variableMappings) {
+      response.variableMappings.forEach((mapping: any) => {
+        SecureLogger.debug(`Renamed ${mapping.oldName} to ${mapping.newName} (${mapping.purpose})`);
+      });
+    }
+    
+    return response.renamedCode || code;
+  } catch (error) {
+    SecureLogger.debug(`Gemini 2.5 processing failed: ${error}, falling back to legacy mode`);
+    throw error; // Re-throw to trigger legacy mode fallback
   }
-  
-  return response.renamedCode;
 }
 
 async function performVerification(client: any, model: string, originalCode: string, renamedCode: string): Promise<string> {
@@ -325,16 +378,21 @@ async function performVerification(client: any, model: string, originalCode: str
 
   const result = await geminiModel.generateContent(createVerificationPrompt(originalCode, renamedCode));
   
-  const response = JSON.parse(result.response.text());
-  
-  SecureLogger.debug(`Verification status: ${response.verificationStatus}`);
-  
-  if (response.issuesFound && response.issuesFound.length > 0) {
-    SecureLogger.debug(`Issues found: ${JSON.stringify(response.issuesFound)}`);
-    return response.correctedCode || renamedCode;
+  try {
+    const response = JSON.parse(result.response.text());
+    
+    SecureLogger.debug(`Verification status: ${response.verificationStatus}`);
+    
+    if (response.issuesFound && response.issuesFound.length > 0) {
+      SecureLogger.debug(`Issues found: ${JSON.stringify(response.issuesFound)}`);
+      return response.correctedCode || renamedCode;
+    }
+    
+    return renamedCode;
+  } catch (error) {
+    SecureLogger.debug(`Verification JSON parsing failed: ${error}, returning code as-is`);
+    return renamedCode;
   }
-  
-  return renamedCode;
 }
 
 async function performQualityCheck(client: any, model: string, code: string): Promise<string> {

@@ -182,41 +182,67 @@ async function processRegularFile(
     // Only process files that contain JavaScript-like code
     if (shouldProcessFile(filePath, code)) {
       
-      for (let i = 0; i < plugins.length; i++) {
-        const plugin = plugins[i];
+      // Special handling for HTML files
+      const ext = path.extname(filePath).toLowerCase();
+      if (['.html', '.htm'].includes(ext)) {
+        // Process HTML files with embedded JavaScript separately
+        formattedCode = await processHtmlFile(code, plugins);
         
-        // Update progress through plugin processing
         if (updateProgress) {
-          const pluginProgress = 0.2 + (i / plugins.length) * 0.7;
-          progressManager.updateCurrentFileProgress(pluginProgress);
+          progressManager.updateCurrentFileProgress(0.9);
+        }
+      } else {
+        // Skip Babel processing for non-JavaScript files to prevent parsing errors
+        const skipBabel = shouldSkipBabelProcessing(filePath);
+        
+        for (let i = 0; i < plugins.length; i++) {
+          const plugin = plugins[i];
+          
+          // Update progress through plugin processing
+          if (updateProgress) {
+            const pluginProgress = 0.2 + (i / plugins.length) * 0.7;
+            progressManager.updateCurrentFileProgress(pluginProgress);
+          }
+          
+          try {
+            // For non-JavaScript files, only use plugins that don't require Babel parsing
+            if (skipBabel) {
+              // Only apply non-Babel plugins (like prettier for HTML, or text-based transformations)
+              const pluginName = plugin.name || 'unknown';
+              if (pluginName.includes('babel') || pluginName.includes('Babel')) {
+                SecureLogger.debug(`Skipping Babel plugin for non-JS file: ${filePath}`);
+                continue;
+              }
+            }
+            
+            formattedCode = await plugin(formattedCode);
+          } catch (pluginError) {
+            console.error(`Error in plugin for file ${filePath}:`, pluginError);
+            // Continue with the next plugin
+          }
         }
         
-        try {
-          formattedCode = await plugin(formattedCode);
-        } catch (pluginError) {
-          console.error(`Error in plugin for file ${filePath}:`, pluginError);
-          // Continue with the next plugin
+        // Final progress update before file completion
+        if (updateProgress) {
+          progressManager.updateCurrentFileProgress(0.9);
+        }
+        
+        // Attempt to parse the final code for JavaScript files only
+        if (isJavaScriptFile(filePath)) {
+          try {
+            parse(formattedCode, { sourceType: "module", plugins: ["jsx"] });
+          } catch (parseError) {
+            console.error(`Syntax error in file ${filePath} after processing:`, parseError);
+            // Revert to the original code if parsing fails
+            formattedCode = code;
+          }
+        }
+        
+        // Fix invalid escape sequences for JavaScript files only
+        if (isJavaScriptFile(filePath)) {
+          formattedCode = fixInvalidEscapeSequences(formattedCode);
         }
       }
-      
-      // Final progress update before file completion
-      if (updateProgress) {
-        progressManager.updateCurrentFileProgress(0.9);
-      }
-      
-      // Attempt to parse the final code for JavaScript files
-      if (isJavaScriptFile(filePath)) {
-        try {
-          parse(formattedCode, { sourceType: "module", plugins: ["jsx"] });
-        } catch (parseError) {
-          console.error(`Syntax error in file ${filePath} after processing:`, parseError);
-          // Revert to the original code if parsing fails
-          formattedCode = code;
-        }
-      }
-      
-      // Fix invalid escape sequences
-      formattedCode = fixInvalidEscapeSequences(formattedCode);
     }
     
     SecureLogger.debug("File processed", {
@@ -244,9 +270,28 @@ function shouldProcessFile(filePath: string, code: string): boolean {
     return true;
   }
   
-  // For HTML files, only process if they contain script tags
+  // For HTML files, only process if they contain substantial script content
   if (['.html', '.htm'].includes(ext)) {
-    return code.includes('<script') && code.includes('</script>');
+    const hasScriptTags = code.includes('<script') && code.includes('</script>');
+    if (!hasScriptTags) {
+      return false;
+    }
+    
+    // Extract script content and check if it's substantial
+    const scriptMatches = code.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    if (!scriptMatches) {
+      return false;
+    }
+    
+    // Check if there's meaningful JavaScript code (not just simple inline scripts)
+    const scriptContent = scriptMatches.join('');
+    const cleanScript = scriptContent.replace(/<\/?script[^>]*>/gi, '');
+    
+    // Only process if there's substantial minified/obfuscated JS (more than basic inline scripts)
+    return cleanScript.length > 200 && (
+      /\b[a-z]\b/.test(cleanScript) || // Single letter variables
+      cleanScript.split('\n').some(line => line.length > 100) // Long lines
+    );
   }
   
   // For Vue/Svelte files, only process if they contain script sections
@@ -272,6 +317,64 @@ function shouldProcessFile(filePath: string, code: string): boolean {
 function isJavaScriptFile(filePath: string): boolean {
   const ext = path.extname(filePath).toLowerCase();
   return ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'].includes(ext);
+}
+
+function shouldSkipBabelProcessing(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  // Skip Babel processing for non-JavaScript files to prevent parsing errors
+  return ['.html', '.htm', '.vue', '.svelte', '.json'].includes(ext);
+}
+
+async function processHtmlFile(code: string, plugins: ((_code: string) => Promise<string>)[]): Promise<string> {
+  // Extract script tags and their content
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  const scripts: { fullMatch: string; content: string; processed: string }[] = [];
+  
+  let match;
+  while ((match = scriptRegex.exec(code)) !== null) {
+    const scriptContent = match[1];
+    if (scriptContent.trim().length > 0) {
+      scripts.push({
+        fullMatch: match[0],
+        content: scriptContent,
+        processed: scriptContent
+      });
+    }
+  }
+  
+  // Process each script block with JavaScript-safe plugins
+  for (const script of scripts) {
+    let processedContent = script.content;
+    
+    // Only apply plugins that can handle JavaScript content
+    for (const plugin of plugins) {
+      try {
+        // Skip plugins that are specifically for Babel/AST transformation
+        const pluginName = plugin.name || 'unknown';
+        if (pluginName.includes('babel') || pluginName.includes('Babel')) {
+          continue;
+        }
+        
+        processedContent = await plugin(processedContent);
+      } catch (error) {
+        SecureLogger.debug(`Plugin failed for HTML script content: ${error}`);
+        // Continue with original content if plugin fails
+      }
+    }
+    
+    script.processed = processedContent;
+  }
+  
+  // Replace script content in the original HTML
+  let processedHtml = code;
+  for (const script of scripts) {
+    if (script.processed !== script.content) {
+      const newScriptTag = script.fullMatch.replace(script.content, script.processed);
+      processedHtml = processedHtml.replace(script.fullMatch, newScriptTag);
+    }
+  }
+  
+  return processedHtml;
 }
 
 function isHeavilyMinified(code: string): boolean {

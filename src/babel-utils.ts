@@ -73,9 +73,9 @@ function validateCodeSafety(code: string): void {
     /require\s*\(\s*['"]http['"]\s*\)/,
     /require\s*\(\s*['"]https['"]\s*\)/,
 
-    // Code execution
+    // Code execution - be more specific to avoid false positives
     /eval\s*\(/,
-    /Function\s*\(/,
+    /Function\s*\(\s*['"][^'"]*['"]\s*\)/,  // Function constructor with string literals (more dangerous)
     /setTimeout\s*\(\s*['"][^'"]*['"]/,
     /setInterval\s*\(\s*['"][^'"]*['"]/,
 
