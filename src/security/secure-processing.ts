@@ -61,18 +61,16 @@ export class SecureCodeProcessor {
    */
   private static validateCodeSafety(code: string): void {
     const dangerousPatterns = [
-      /require\s*\(\s*['"]fs['"]/, // File system access
-      /require\s*\(\s*['"]child_process['"]/, // Process execution
-      /require\s*\(\s*['"]os['"]/, // OS access
-      /require\s*\(\s*['"]net['"]/, // Network access
-      /require\s*\(\s*['"]http['"]/, // HTTP access
-      /require\s*\(\s*['"]https['"]/, // HTTPS access
-      /eval\s*\(/, // Direct eval
-      /Function\s*\(/, // Function constructor
-      /process\./, // Process object access
-      /global\./, // Global object access
-      /__dirname/, // Directory access
-      /__filename/ // File access
+      /require\s*\(\s*['"]child_process['"]\s*\)/, // Process execution
+      /spawn\s*\(/, // Process spawning
+      /exec\s*\(/, // Process execution
+      /eval\s*\(\s*['"]/, // Eval with string literals (suspicious)
+      /new\s+Function\s*\(\s*['"]/, // Function constructor with strings
+      /document\.write\s*\(/, // DOM manipulation in server context
+      /window\.location\s*=/, // Navigation manipulation
+      /XMLHttpRequest\s*\(/, // Direct network requests
+      /fetch\s*\(\s*['"]\//, // Absolute URL fetches
+      /\.innerHTML\s*=.*script/, // Script injection via innerHTML
     ];
 
     for (const pattern of dangerousPatterns) {

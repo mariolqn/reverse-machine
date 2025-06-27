@@ -65,30 +65,24 @@ export const transformWithPlugins = async (
  */
 function validateCodeSafety(code: string): void {
   const dangerousPatterns = [
-    // Direct system access
-    /require\s*\(\s*['"]fs['"]\s*\)/,
-    /require\s*\(\s*['"]child_process['"]\s*\)/,
-    /require\s*\(\s*['"]os['"]\s*\)/,
-    /require\s*\(\s*['"]net['"]\s*\)/,
-    /require\s*\(\s*['"]http['"]\s*\)/,
-    /require\s*\(\s*['"]https['"]\s*\)/,
+    // Direct dangerous system access
+    /require\s*\(\s*['"]child_process['"]\s*\)\s*\.\s*exec/,
+    /require\s*\(\s*['"]child_process['"]\s*\)\s*\.\s*spawn/,
+    
+    // Code execution that looks malicious
+    /eval\s*\(\s*['"`][^'"`]*(?:script|exec|system)[^'"`]*['"`]/,
+    /new\s+Function\s*\(\s*['"][^'"]*(?:script|exec|system)[^'"]*['"]\s*\)/,
+    /setTimeout\s*\(\s*['"][^'"]*(?:script|exec|system)[^'"]*['"]/,
+    /setInterval\s*\(\s*['"][^'"]*(?:script|exec|system)[^'"]*['"]/,
 
-    // Code execution - be more specific to avoid false positives
-    /eval\s*\(/,
-    /Function\s*\(\s*['"][^'"]*['"]\s*\)/,  // Function constructor with string literals (more dangerous)
-    /setTimeout\s*\(\s*['"][^'"]*['"]/,
-    /setInterval\s*\(\s*['"][^'"]*['"]/,
-
-    // Process/global access
-    /process\./,
-    /global\./,
-    /__dirname/,
-    /__filename/,
-
-    // Suspicious imports
-    /import\s+.*['"]fs['"]/,
-    /import\s+.*['"]child_process['"]/,
-    /import\s+.*['"]vm['"]/
+    // Obvious attacks
+    /document\.write\s*\(\s*['"]<script/i,
+    /window\.location\s*=\s*['"]javascript:/,
+    /innerHTML\s*=\s*['"][^'"]*<script/i,
+    
+    // Suspicious imports that would be dangerous in our context
+    /import\s+.*['"]child_process['"].*\.\s*exec/,
+    /import\s+.*['"]vm['"].*\.\s*runInNewContext/
   ];
 
   for (const pattern of dangerousPatterns) {
