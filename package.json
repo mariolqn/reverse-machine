@@ -61,7 +61,7 @@
   "author": "Jesse Luoto",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.3",
+    "@anthropic-ai/sdk": "^0.67.0",
     "@babel/core": "^7.25.2",
     "@babel/types": "^7.25.2",
     "@google/generative-ai": "^0.20.0",
