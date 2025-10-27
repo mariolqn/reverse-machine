@@ -67,7 +67,7 @@
     "@google/generative-ai": "^0.20.0",
     "@types/babel__core": "^7.20.5",
     "babel-plugin-transform-beautifier": "^0.1.0",
-    "commander": "^12.1.0",
+    "commander": "^14.0.2",
     "dotenv": "^16.4.5",
     "openai": "^4.55.1",
     "tsx": "^4.16.2",
