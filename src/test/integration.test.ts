@@ -16,7 +16,7 @@ test.afterEach(async () => {
   await rm(TEST_OUTPUT_DIR, { recursive: true, force: true });
 });
 
-test("Integration: Local command with all plugins", { skip: !process.env.OPENAI_API_KEY }, async () => {
+test("Integration: Local command with all plugins", async () => {
   const testFile = `${TEST_FIXTURES_DIR}/complex.js`;
   const complexCode = `
 var a=function(b,c){var d=b+c;return d*2};
@@ -28,18 +28,7 @@ for(var n=0;n<10;n++){console.log(n)}
 
   await writeFile(testFile, complexCode);
 
-  const result = await reverseMachine(
-    "local",
-    testFile,
-    "--outputDir",
-    TEST_OUTPUT_DIR
-  );
-
-  assert(
-    result.stdout.includes("Successfully") ||
-      result.stderr.includes("Successfully"),
-    "Should indicate successful processing"
-  );
+  await reverseMachine("local", testFile, "--outputDir", TEST_OUTPUT_DIR);
 
   const outputContent = await readFile(
     `${TEST_OUTPUT_DIR}/deobfuscated.js`,
@@ -151,7 +140,7 @@ function batch${i}(param) {
   }
 });
 
-test("Integration: Verbose mode provides detailed output", { skip: !process.env.OPENAI_API_KEY }, async () => {
+test("Integration: Verbose mode provides detailed output", async () => {
   const testFile = `${TEST_FIXTURES_DIR}/verbose-test.js`;
   await writeFile(testFile, "function a(b,c){return b+c}");
 

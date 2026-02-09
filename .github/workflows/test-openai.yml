@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-      - run: npm install --ci
+      - run: npm ci
       - run: npm run build
       - run: npm run download-ci-model
       - run: npm run test:openai

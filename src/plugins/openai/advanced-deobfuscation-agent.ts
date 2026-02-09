@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { SecureLogger } from "../../security/secure-logger.js";
+import { parseModelObject } from "../../security/secure-json.js";
 
 // Advanced GPT-4.1 Multi-Agent Configuration
 const AGENT_CONFIG = {
@@ -128,7 +129,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI semantic analysis response"
+    ) as any;
     SecureLogger.debug(`🧠 Semantic Analysis: ${result.description}`);
     return result;
   }
@@ -155,7 +159,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI pattern recognition response"
+    ) as any;
     SecureLogger.debug(`🔍 Pattern Recognition: Found ${result.patterns?.length || 0} patterns`);
     return result;
   }
@@ -180,7 +187,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI intelligent naming response"
+    ) as any;
     SecureLogger.debug(`🏷️ Generated ${result.mappings?.length || 0} variable mappings`);
     return result;
   }
@@ -205,7 +215,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI transformation response"
+    ) as any;
     SecureLogger.debug("🔄 Code transformation completed");
     return result.transformedCode || code;
   }
@@ -230,7 +243,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI quality assurance response"
+    ) as any;
     SecureLogger.debug(`✅ Quality Score: ${result.overallScore}/10`);
     return result;
   }
@@ -255,7 +271,10 @@ export class AdvancedDeobfuscationAgent {
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message?.content || "{}");
+    const result = parseModelObject(
+      response.choices[0].message?.content || "{}",
+      "OpenAI self-correction response"
+    ) as any;
     SecureLogger.debug("🔧 Self-correction completed");
     return result.correctedCode || code;
   }

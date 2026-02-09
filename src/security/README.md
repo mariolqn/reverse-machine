@@ -1,19 +1,18 @@
 # Security Modules
 
-This directory contains security-hardened modules that address critical vulnerabilities identified in the security audit.
+This directory contains security-hardened modules used by the CLI and reusable security utilities for future integrations.
 
 ## 🛡️ Security Fixes Implemented
 
 ### Critical Vulnerabilities Addressed
 
-| Vulnerability       | CVSS Score | Status   | Module                 |
-| ------------------- | ---------- | -------- | ---------------------- |
-| Path Traversal      | 9.1        | ✅ Fixed | `input-validator.ts`   |
-| Unsafe JSON Parsing | 8.5        | ✅ Fixed | `secure-json.ts`       |
-| Code Injection      | 8.2        | ✅ Fixed | `secure-processing.ts` |
-| API Key Exposure    | 8.0        | ✅ Fixed | `secure-logger.ts`     |
-| Directory Traversal | 6.8        | ✅ Fixed | `input-validator.ts`   |
-| Unsafe Downloads    | 6.5        | ✅ Fixed | `secure-downloads.ts`  |
+| Control             | Status in Default CLI Path | Module                 |
+| ------------------- | -------------------------- | ---------------------- |
+| Path validation     | ✅ Enabled                 | `input-validator.ts`   |
+| JSON safety parser  | ✅ Enabled                 | `secure-json.ts`       |
+| Secret redaction    | ✅ Enabled                 | `secure-logger.ts`     |
+| Sandboxed workers   | ⚠️ Utility (not wired)     | `secure-processing.ts` |
+| Secure downloads    | ⚠️ Utility (not wired)     | `secure-downloads.ts`  |
 
 ## 📋 Module Overview
 
@@ -47,7 +46,7 @@ This directory contains security-hardened modules that address critical vulnerab
   - Pattern-based redaction
   - Error sanitization
 
-### `secure-processing.ts`
+### `secure-processing.ts` (utility module)
 
 - **Purpose**: Sandboxed code execution with resource limits
 - **Features**:
@@ -57,7 +56,7 @@ This directory contains security-hardened modules that address critical vulnerab
   - Dangerous pattern detection
   - Resource cleanup
 
-### `secure-downloads.ts`
+### `secure-downloads.ts` (utility module)
 
 - **Purpose**: Secure file downloads with integrity verification
 - **Features**:

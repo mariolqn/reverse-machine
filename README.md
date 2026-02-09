@@ -73,6 +73,17 @@ reverse-machine <mode> [options] <input>
 reverse-machine <mode> --cost <input>
 ```
 
+**Available modes:**
+- `openai` - OpenAI-powered deobfuscation
+- `gemini` - Gemini-powered deobfuscation
+- `anthropic` - Claude-powered deobfuscation
+- `local` - Local-only AST cleanup + formatting (no remote LLM calls)
+
+**Output contract:**
+- Default behavior keeps current behavior (`<file> - Deobfuscated.<ext>` for single files)
+- Use `--output-dir <path>` (or legacy alias `--outputDir <path>`) to write outputs into a target directory
+- For single-file input with `--output-dir`, output file is `<output-dir>/deobfuscated.<ext>`
+
 ### 📁 Input Types
 
 Reverse Machine supports three input types with intelligent output handling:
@@ -125,12 +136,18 @@ reverse-machine openai obfuscated-app.zip
 reverse-machine openai \
   --model="gpt-4o" \
   --concurrency=8 \
+  --output-dir="./processed" \
   --verbose \
   input-file-or-directory
 ```
 
 **Environment Variables:**
 - `OPENAI_API_KEY`: Your OpenAI API key
+
+If no API key is provided, the CLI exits with a machine-readable `problem+json` error:
+- `invalid_input`
+- `missing_api_key`
+- `processing_failed`
 
 ### 🌟 Gemini Mode (Fast & Efficient)
 

@@ -4,14 +4,21 @@ import { openai } from "./commands/openai.js";
 import { cli } from "./cli.js";
 import { gemini } from "./commands/gemini.js";
 import { anthropic } from "./commands/anthropic.js";
+import { local } from "./commands/local.js";
+import { failWithProblem } from "./cli-error.js";
+import { toCliProblem } from "./commands/common.js";
 
 cli()
   .name("reverse-machine")
   .description(
-    "Deobfuscate JavaScript code using AI. Supports single files, project directories, and ZIP archives."
+    "Deobfuscate or normalize JavaScript code. Supports single files, project directories, and ZIP archives."
   )
   .version(version)
   .addCommand(openai)
   .addCommand(anthropic)
   .addCommand(gemini)
-  .parse(process.argv);
+  .addCommand(local)
+  .parseAsync(process.argv)
+  .catch((error) => {
+    failWithProblem(toCliProblem(error));
+  });

@@ -5,7 +5,9 @@
   "main": "dist/index.mjs",
   "scripts": {
     "start": "tsx src/index.ts",
+    "reverse-machine": "node ./dist/index.mjs",
     "build": "pkgroll",
+    "download-ci-model": "node -e \"console.log('No local model download required.')\"",
     "deploy:patch": "npm version patch && npm run deploy:release",
     "deploy:minor": "npm version minor && npm run deploy:release",
     "deploy:major": "npm version major && npm run deploy:release",
@@ -17,6 +19,7 @@
     "test:llm": "find src -name '*.llmtest.ts' | xargs tsx --test --test-concurrency=1",
     "test:openai": "npm run build && find src -name '*.openaitest.ts' | xargs tsx --test",
     "test:gemini": "npm run build && find src -name '*.geminitest.ts' | xargs tsx --test",
+    "test:local": "npm run reverse-machine -- local",
     "test:coverage": "c8 --reporter=text --reporter=html --reporter=lcov npm run test:unit",
     "test:integration": "npm run build && npm run test:e2e && npm run test:llm",
     "test:performance": "find src -name '*.perftest.ts' | xargs tsx --test",

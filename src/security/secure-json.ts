@@ -19,6 +19,10 @@ export interface AnthropicResponse {
 // Maximum JSON string length to prevent DoS
 const MAX_JSON_LENGTH = 10 * 1024 * 1024; // 10MB
 
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * Validates OpenAI rename response structure
  */
@@ -122,28 +126,87 @@ export function parseSecureJSON<T>(
   return parsed as T;
 }
 
+/**
+ * Parses model JSON responses with prototype-pollution protection.
+ * This parser is intentionally permissive on values to allow code payloads.
+ */
+export function parseModelJSON<T>(
+  jsonString: string,
+  context: string,
+  validator?: (data: unknown) => data is T
+): T {
+  if (jsonString.length > MAX_JSON_LENGTH) {
+    throw new SecurityError(
+      `${context} too large. Maximum size: ${MAX_JSON_LENGTH / 1024 / 1024}MB`
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString, (key, value) => {
+      if (
+        typeof key === "string" &&
+        (key === "__proto__" || key === "constructor" || key === "prototype")
+      ) {
+        throw new SecurityError(
+          `${context} contains potentially dangerous key: ${key}`
+        );
+      }
+      return value;
+    });
+  } catch (error) {
+    if (error instanceof SecurityError) {
+      throw error;
+    }
+    throw new SecurityError(
+      `Invalid ${context} format: ${(error as Error).message}`
+    );
+  }
+
+  if (!isJsonObject(parsed)) {
+    throw new SecurityError(`${context} must be a JSON object`);
+  }
+
+  if (validator && !validator(parsed)) {
+    throw new SecurityError(`${context} schema validation failed`);
+  }
+
+  return parsed as T;
+}
+
+export function parseModelObject(
+  jsonString: string,
+  context: string
+): Record<string, unknown> {
+  return parseModelJSON<Record<string, unknown>>(
+    jsonString,
+    context,
+    (data): data is Record<string, unknown> => isJsonObject(data)
+  );
+}
+
 // Export specific parsers for convenience
 export function parseOpenAIResponse(jsonString: string): OpenAIRenameResponse {
-  return parseSecureJSON(
+  return parseModelJSON(
     jsonString,
-    validateOpenAIResponse,
-    "OpenAI API response"
+    "OpenAI API response",
+    validateOpenAIResponse
   );
 }
 
 export function parseGeminiResponse(jsonString: string): GeminiResponse {
-  return parseSecureJSON(
+  return parseModelJSON(
     jsonString,
-    validateGeminiResponse,
-    "Gemini API response"
+    "Gemini API response",
+    validateGeminiResponse
   );
 }
 
 export function parseAnthropicResponse(jsonString: string): AnthropicResponse {
-  return parseSecureJSON(
+  return parseModelJSON(
     jsonString,
-    validateAnthropicResponse,
-    "Anthropic API response"
+    "Anthropic API response",
+    validateAnthropicResponse
   );
 }
 

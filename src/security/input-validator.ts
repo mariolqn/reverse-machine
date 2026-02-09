@@ -1,6 +1,5 @@
 import path from "path";
 import fs from "fs";
-import { err } from "../cli-error.js";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_DIRECTORY_SIZE = 500 * 1024 * 1024; // 500MB for directories
@@ -39,7 +38,7 @@ export function validateInputFile(inputPath: string): string {
 
   // Check if path exists AFTER security validation
   if (!fs.existsSync(absolutePath)) {
-    err(`Path ${inputPath} not found`);
+    throw new SecurityError(`Path not found: ${inputPath}`);
   }
 
   const stats = fs.statSync(absolutePath);

@@ -66,8 +66,12 @@ export const transformWithPlugins = async (
 function validateCodeSafety(code: string): void {
   const dangerousPatterns = [
     // Direct dangerous system access
+    /require\s*\(\s*['"]fs['"]\s*\)/,
+    /require\s*\(\s*['"]node:fs['"]\s*\)/,
+    /require\s*\(\s*['"]fs\/promises['"]\s*\)/,
     /require\s*\(\s*['"]child_process['"]\s*\)\s*\.\s*exec/,
     /require\s*\(\s*['"]child_process['"]\s*\)\s*\.\s*spawn/,
+    /\bprocess\s*\.\s*exit\s*\(/,
     
     // Code execution that looks malicious
     /eval\s*\(\s*['"`][^'"`]*(?:script|exec|system)[^'"`]*['"`]/,

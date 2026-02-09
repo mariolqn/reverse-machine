@@ -1,6 +1,9 @@
 import { visitAllIdentifiers } from "./visit-all-identifiers.js";
 import { SecureLogger } from "../security/secure-logger.js";
-import { parseGeminiResponse } from "../security/secure-json.js";
+import {
+  parseGeminiResponse,
+  parseModelObject
+} from "../security/secure-json.js";
 import { progressManager } from "../progress.js";
 
 // Gemini 2.5 Pro optimized configuration for maximum quality
@@ -230,7 +233,10 @@ function parseGeminiJsonResponse(responseText: string, context: string): any {
   
   // Strategy 1: Direct JSON parsing
   try {
-    const parsed = JSON.parse(cleanedResponse);
+    const parsed = parseModelObject(
+      cleanedResponse,
+      `${context}: direct parse`
+    );
     SecureLogger.debug(`${context}: Direct JSON parsing successful`);
     return validateAndFixParsedResponse(parsed, context);
   } catch (error) {
@@ -411,7 +417,7 @@ function extractJsonFromMixedContent(text: string, context: string): any {
       
       for (const match of sortedMatches) {
         try {
-          const parsed = JSON.parse(match);
+          const parsed = parseModelObject(match, `${context}: extracted parse`);
           SecureLogger.debug(`${context}: JSON extracted from mixed content`);
           return parsed;
         } catch (error) {
@@ -419,7 +425,10 @@ function extractJsonFromMixedContent(text: string, context: string): any {
           const repaired = repairJsonString(match);
           if (repaired) {
             try {
-              const parsed = JSON.parse(repaired);
+              const parsed = parseModelObject(
+                repaired,
+                `${context}: repaired extracted parse`
+              );
               SecureLogger.debug(`${context}: JSON extracted and repaired from mixed content`);
               return parsed;
         } catch (e) {
@@ -505,7 +514,7 @@ function progressiveJsonRepair(text: string, context: string): any {
         for (const match of objectMatches) {
           if (match.length > maxLength) {
             try {
-              JSON.parse(match);
+              parseModelObject(match, `${context}: object recovery parse`);
               lastCompleteJson = match;
               maxLength = match.length;
             } catch (e) {
@@ -521,7 +530,7 @@ function progressiveJsonRepair(text: string, context: string): any {
         for (const match of arrayMatches) {
           if (match.length > maxLength) {
             try {
-              JSON.parse(match);
+              parseModelObject(match, `${context}: array recovery parse`);
               lastCompleteJson = match;
               maxLength = match.length;
             } catch (e) {
@@ -600,7 +609,10 @@ function progressiveJsonRepair(text: string, context: string): any {
   for (let i = 0; i < repairStrategies.length; i++) {
     try {
       workingText = repairStrategies[i](workingText);
-      const parsed = JSON.parse(workingText);
+      const parsed = parseModelObject(
+        workingText,
+        `${context}: progressive repair parse`
+      );
       SecureLogger.debug(`${context}: JSON repaired with strategy ${i + 1}`);
       return parsed;
   } catch (error) {

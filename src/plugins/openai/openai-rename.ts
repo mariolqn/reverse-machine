@@ -2,6 +2,10 @@ import OpenAI from "openai";
 import { progressManager } from "../../progress.js";
 import { SecureLogger } from "../../security/secure-logger.js";
 import { AdvancedDeobfuscationAgent } from "./advanced-deobfuscation-agent.js";
+import {
+  parseModelObject,
+  parseOpenAIResponse
+} from "../../security/secure-json.js";
 
 // GPT-4.1 optimized configuration for maximum quality
 const GPT41_CONFIG = {
@@ -20,7 +24,13 @@ export function openaiRename({
   model: string;
   useAdvancedAgent?: boolean;
 }) {
-  const client = new OpenAI({ apiKey });
+  let client: OpenAI | undefined;
+  const getClient = () => {
+    if (!client) {
+      client = new OpenAI({ apiKey });
+    }
+    return client;
+  };
 
   return async (code: string): Promise<string> => {
     SecureLogger.debug(`Starting processing for ${code.length} characters with model: ${model}`);
@@ -32,10 +42,10 @@ export function openaiRename({
     if (shouldUseAdvanced) {
       return await processWithAdvancedAgent(apiKey, model, code);
     } else if (isAdvancedModel) {
-      return await processWithGPT41(client, model, code);
+      return await processWithGPT41(getClient(), model, code);
     } else {
       // Fallback to original approach for older models
-      return await processWithLegacyModel(client, model, code);
+      return await processWithLegacyModel(getClient(), model, code);
     }
   };
 }
@@ -80,8 +90,7 @@ async function processWithAdvancedAgent(
     
   } catch (error) {
     SecureLogger.debug(`❌ Advanced agent failed: ${error}, falling back to standard GPT-4.1`);
-    const client = new OpenAI({ apiKey });
-    return await processWithGPT41(client, model, code);
+    return await processWithGPT41(new OpenAI({ apiKey }), model, code);
   }
 }
 
@@ -142,19 +151,24 @@ async function performDeobfuscation(
     throw new Error("Empty response from GPT-4.1");
   }
 
-  const parsedResult = JSON.parse(result);
+  const parsedResult = parseModelObject(
+    result,
+    "OpenAI deobfuscation response"
+  ) as any;
   
   // Log the analysis for debugging
   SecureLogger.debug(`GPT-4.1 Analysis: ${parsedResult.analysis}`);
   
   // Log variable mappings
   if (parsedResult.variableMappings) {
-    parsedResult.variableMappings.forEach((mapping: any) => {
+    (parsedResult.variableMappings as Array<Record<string, unknown>>).forEach(
+      (mapping: Record<string, unknown>) => {
       SecureLogger.debug(`Renamed ${mapping.oldName} to ${mapping.newName} (${mapping.purpose})`);
-    });
+      }
+    );
   }
   
-  return parsedResult.renamedCode;
+  return String(parsedResult.renamedCode ?? code);
 }
 
 async function performVerification(
@@ -187,13 +201,17 @@ async function performVerification(
     throw new Error("Empty verification response");
   }
 
-  const parsedResult = JSON.parse(result);
+  const parsedResult = parseModelObject(
+    result,
+    "OpenAI verification response"
+  ) as any;
   
   SecureLogger.debug(`Verification status: ${parsedResult.verificationStatus}`);
   
-  if (parsedResult.issuesFound && parsedResult.issuesFound.length > 0) {
+  const issuesFound = parsedResult.issuesFound;
+  if (Array.isArray(issuesFound) && issuesFound.length > 0) {
     SecureLogger.debug(`Issues found: ${JSON.stringify(parsedResult.issuesFound)}`);
-    return parsedResult.correctedCode || renamedCode;
+    return String(parsedResult.correctedCode ?? renamedCode);
   }
   
   return renamedCode;
@@ -229,14 +247,17 @@ async function performQualityCheck(
   }
 
   try {
-    const parsedResult = JSON.parse(result);
+    const parsedResult = parseModelObject(
+      result,
+      "OpenAI quality check response"
+    ) as any;
     SecureLogger.debug(`Quality score: ${parsedResult.qualityScore}`);
     
-    if (parsedResult.improvements && parsedResult.improvements.length > 0) {
+    if (Array.isArray(parsedResult.improvements) && parsedResult.improvements.length > 0) {
       SecureLogger.debug(`Quality improvements: ${JSON.stringify(parsedResult.improvements)}`);
     }
     
-    return parsedResult.finalCode || code;
+    return String(parsedResult.finalCode ?? code);
   } catch (error) {
     SecureLogger.debug(`Quality check parsing failed: ${error}`);
     return code;
@@ -428,7 +449,7 @@ async function processBatch(
     const result = response.choices[0].message?.content;
     if (!result) return;
 
-    const parsedResult = JSON.parse(result);
+    const parsedResult = parseOpenAIResponse(result);
     
     parsedResult.renamedVariables.forEach((rename: { oldName: string; newName: string }) => {
       if (rename.oldName && rename.newName) {

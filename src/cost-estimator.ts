@@ -1,7 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { SecureLogger } from "./security/secure-logger.js";
-import { setupProcessingContext, isProcessableFile } from "./input-handler.js";
+import {
+  collectProcessableFiles,
+  determineInputType,
+  isProcessableFile,
+  listZipEntries,
+  readZipEntryText
+} from "./input-handler.js";
+import { validateInputFile } from "./security/input-validator.js";
 
 // Model pricing data (per 1M tokens, updated for 2025)
 const MODEL_PRICING = {
@@ -66,6 +73,11 @@ interface FileBreakdown {
   fileCost: number;
 }
 
+interface CostEstimationFile {
+  filePath: string;
+  readCode: () => Promise<string>;
+}
+
 export async function estimateDeobfuscationCost(
   inputPath: string,
   provider: 'anthropic' | 'openai' | 'gemini',
@@ -73,10 +85,9 @@ export async function estimateDeobfuscationCost(
   useAdvancedAgent = true
 ): Promise<CostEstimate> {
   SecureLogger.debug(`Estimating cost for ${provider}/${model} on ${inputPath}`);
-  
-  // Setup processing context to get all files that would be processed
-  const context = await setupProcessingContext(inputPath);
-  
+
+  const estimationFiles = await collectCostEstimationFiles(inputPath);
+
   const pricing = MODEL_PRICING[provider][model as keyof typeof MODEL_PRICING[typeof provider]];
   if (!pricing) {
     throw new Error(`Unknown model: ${provider}/${model}`);
@@ -88,10 +99,10 @@ export async function estimateDeobfuscationCost(
   let totalInputCost = 0;
   let totalOutputCost = 0;
   
-  // Process each file for cost estimation
-  for (const filePath of context.files) {
+  // Process each file for cost estimation without creating any output files.
+  for (const estimationFile of estimationFiles) {
     try {
-      const code = await fs.readFile(filePath, 'utf-8');
+      const code = await estimationFile.readCode();
       const fileSize = Buffer.byteLength(code, 'utf-8');
       
       // Estimate tokens for this file
@@ -107,7 +118,7 @@ export async function estimateDeobfuscationCost(
       );
       
       breakdown.push({
-        filePath: path.relative(process.cwd(), filePath),
+        filePath: estimationFile.filePath,
         fileSize,
         estimatedInputTokens: inputTokens,
         estimatedOutputTokens: outputTokens,
@@ -120,7 +131,7 @@ export async function estimateDeobfuscationCost(
       totalOutputCost += outputCost;
       
     } catch (error) {
-      SecureLogger.debug(`Skipping file ${filePath}: ${error}`);
+      SecureLogger.debug(`Skipping file ${estimationFile.filePath}: ${error}`);
     }
   }
   
@@ -128,14 +139,14 @@ export async function estimateDeobfuscationCost(
   const { confidenceLevel, riskWarning, estimatedRange } = calculateConfidenceMetrics(
     totalInputCost + totalOutputCost,
     useAdvancedAgent,
-    context.files.length,
+    estimationFiles.length,
     totalInputTokens
   );
   
   return {
     provider,
     model,
-    totalFiles: context.files.length,
+    totalFiles: estimationFiles.length,
     totalInputTokens,
     estimatedOutputTokens: totalOutputTokens,
     inputCost: totalInputCost,
@@ -147,6 +158,43 @@ export async function estimateDeobfuscationCost(
     riskWarning,
     estimatedRange
   };
+}
+
+async function collectCostEstimationFiles(
+  inputPath: string
+): Promise<CostEstimationFile[]> {
+  const validatedInput = validateInputFile(inputPath);
+  const inputType = await determineInputType(validatedInput);
+
+  if (inputType === "file") {
+    return [
+      {
+        filePath: path.relative(process.cwd(), validatedInput),
+        readCode: () => fs.readFile(validatedInput, "utf-8")
+      }
+    ];
+  }
+
+  if (inputType === "directory") {
+    const files = await collectProcessableFiles(validatedInput);
+    return files.map((filePath) => ({
+      filePath: path.relative(process.cwd(), filePath),
+      readCode: () => fs.readFile(filePath, "utf-8")
+    }));
+  }
+
+  const entries = await listZipEntries(validatedInput);
+  const processableEntries = entries.filter((entry) => {
+    if (entry.endsWith("/")) {
+      return false;
+    }
+    return isProcessableFile(entry);
+  });
+
+  return processableEntries.map((entryPath) => ({
+    filePath: `zip:${entryPath}`,
+    readCode: () => readZipEntryText(validatedInput, entryPath)
+  }));
 }
 
 function estimateInputTokens(

@@ -36,6 +36,14 @@ test("Smoke: CLI responds to --version", async () => {
   assert(result.stdout.trim().length > 0, "Version should not be empty");
 });
 
+test("Smoke: Local command works without API keys", async () => {
+  await reverseMachine("local", TEST_INPUT_FILE, "--outputDir", TEST_OUTPUT_DIR);
+
+  const outputFile = join(TEST_OUTPUT_DIR, "deobfuscated.js");
+  const content = await readFile(outputFile, "utf-8");
+  assert(content.length > 0, "Local mode output file should not be empty");
+});
+
 test("Smoke: OpenAI command works with basic file", { skip: !process.env.OPENAI_API_KEY }, async () => {
   const result = await reverseMachine(
     "openai",

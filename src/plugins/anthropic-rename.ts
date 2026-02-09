@@ -1,6 +1,9 @@
 import { visitAllIdentifiers } from "./visit-all-identifiers.js";
 import { SecureLogger } from "../security/secure-logger.js";
-import { parseAnthropicResponse } from "../security/secure-json.js";
+import {
+  parseAnthropicResponse,
+  parseModelObject
+} from "../security/secure-json.js";
 import { progressManager } from "../progress.js";
 
 // Claude 4 optimized configuration for maximum quality
@@ -193,7 +196,10 @@ async function performSemanticAnalysis(client: any, model: string, code: string)
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic semantic analysis response"
+  ) as any;
   SecureLogger.debug(`🧠 Semantic Analysis: ${result.description}`);
   return result;
 }
@@ -232,7 +238,10 @@ async function performPatternRecognition(client: any, model: string, code: strin
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic pattern recognition response"
+  ) as any;
   SecureLogger.debug(`🔍 Pattern Recognition: Found ${result.patterns?.length || 0} patterns`);
   return result;
 }
@@ -271,7 +280,10 @@ async function performIntelligentNaming(client: any, model: string, code: string
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic intelligent naming response"
+  ) as any;
   SecureLogger.debug(`🏷️ Generated ${result.mappings?.length || 0} variable mappings`);
   return result;
 }
@@ -310,7 +322,10 @@ async function performCodeTransformation(client: any, model: string, code: strin
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic transformation response"
+  ) as any;
   SecureLogger.debug("🔄 Code transformation completed");
   return result.transformedCode || code;
 }
@@ -349,7 +364,10 @@ async function performQualityAssurance(client: any, model: string, transformedCo
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic quality assurance response"
+  ) as any;
   SecureLogger.debug(`✅ Quality Score: ${result.qualityScore}`);
   return { ...result, finalCode: result.finalCode || transformedCode };
 }
@@ -386,7 +404,10 @@ async function performDeobfuscation(client: any, model: string, code: string): P
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic deobfuscation response"
+  ) as any;
   
   // Log the analysis for debugging
   SecureLogger.debug(`Claude 4 Analysis: ${result.analysis}`);
@@ -435,7 +456,10 @@ async function performVerification(client: any, model: string, originalCode: str
     }
   }
   
-  const result = JSON.parse(responseText);
+  const result = parseModelObject(
+    responseText,
+    "Anthropic verification response"
+  ) as any;
   
   SecureLogger.debug(`Verification status: ${result.verificationStatus}`);
   
@@ -482,7 +506,10 @@ async function performQualityCheck(client: any, model: string, code: string): Pr
   }
 
   try {
-    const result = JSON.parse(responseText);
+    const result = parseModelObject(
+      responseText,
+      "Anthropic quality check response"
+    ) as any;
     SecureLogger.debug(`Quality score: ${result.qualityScore}`);
     
     if (result.improvements && result.improvements.length > 0) {

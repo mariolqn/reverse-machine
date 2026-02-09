@@ -1,20 +1,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { SecureLogger } from "./security/secure-logger.js";
-import { setupProcessingContext, ProcessingContext, isProcessableFile } from "./input-handler.js";
-import { webcrack } from "./plugins/webcrack.js";
+import { setupProcessingContext, ProcessingContext } from "./input-handler.js";
 import { parse } from "@babel/parser";
 import { progressManager } from "./progress.js";
 
 export async function unminifyEnhanced(
   inputPath: string,
   plugins: ((_code: string) => Promise<string>)[] = [],
-  concurrency: number = 1
+  concurrency: number = 1,
+  outputDir?: string
 ) {
   try {
     SecureLogger.debug(`Starting enhanced unminification of: ${inputPath}`);
-    
-    const context = await setupProcessingContext(inputPath);
+
+    const context = await setupProcessingContext(inputPath, { outputDir });
     
     SecureLogger.debug(`Processing context:`, {
       inputType: context.inputType,
@@ -89,9 +89,7 @@ async function processMultipleFiles(
   concurrency: number
 ) {
   SecureLogger.debug(`Processing ${context.files.length} files with concurrency ${concurrency}`);
-  
-  let completedFiles = 0;
-  
+
   const processFile = async (filePath: string, index: number) => {
     try {
       const fileName = path.basename(filePath);
@@ -118,16 +116,23 @@ async function processMultipleFiles(
     }
   };
   
-  // Process files in batches
-  const batchSize = Math.max(1, Math.ceil(context.files.length / concurrency));
-  const batches = [];
-  for (let i = 0; i < context.files.length; i += batchSize) {
-    batches.push(context.files.slice(i, i + batchSize));
-  }
-  
-  for (const batch of batches) {
-    await Promise.all(batch.map((filePath, index) => processFile(filePath, index)));
-  }
+  const workerCount = Math.max(1, Math.min(concurrency, context.files.length));
+  let nextIndex = 0;
+
+  const runWorker = async () => {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+
+      if (index >= context.files.length) {
+        return;
+      }
+
+      await processFile(context.files[index], index);
+    }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
 }
 
 async function processBundledFile(
@@ -144,6 +149,7 @@ async function processBundledFile(
   }
   
   // Use webcrack to extract the bundled file
+  const { webcrack } = await import("./plugins/webcrack.js");
   const extractedFiles = await webcrack(code, outputDir);
   
   if (isSingleFile) {
@@ -215,7 +221,11 @@ async function processRegularFile(
               }
             }
             
-            formattedCode = await plugin(formattedCode);
+            formattedCode = await runPluginWithTimeout(
+              plugin,
+              formattedCode,
+              filePath
+            );
           } catch (pluginError) {
             console.error(`Error in plugin for file ${filePath}:`, pluginError);
             // Continue with the next plugin
@@ -417,4 +427,31 @@ function fixInvalidEscapeSequences(code: string): string {
   return code.replace(/\\u([0-9a-fA-F]{0,3}[^0-9a-fA-F])/g, (match, p1) => {
     return `\\u${p1.padStart(4, "0")}`;
   });
-} 
+}
+
+async function runPluginWithTimeout(
+  plugin: (_code: string) => Promise<string>,
+  code: string,
+  filePath: string,
+  timeoutMs: number = 15_000
+): Promise<string> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    const timeoutPromise = new Promise<string>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(
+          new Error(
+            `Plugin "${plugin.name || "anonymous"}" timed out after ${timeoutMs}ms while processing ${filePath}`
+          )
+        );
+      }, timeoutMs);
+    });
+
+    return await Promise.race([plugin(code), timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
