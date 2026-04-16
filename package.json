@@ -81,7 +81,7 @@
     "webcrack": "^2.13.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.8.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
     "c8": "^10.1.2",
     "eslint": "^9.8.0",
