@@ -3,6 +3,9 @@
   "version": "2.1.5",
   "description": "",
   "main": "dist/index.mjs",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
     "reverse-machine": "node ./dist/index.mjs",
@@ -11,7 +14,7 @@
     "deploy:patch": "npm version patch && npm run deploy:release",
     "deploy:minor": "npm version minor && npm run deploy:release",
     "deploy:major": "npm version major && npm run deploy:release",
-    "deploy:release": " git push --tags && npm run build && npm publish && npm run deploy:create-github-release",
+    "deploy:release": "git push --tags && npm run build && npm publish && npm run deploy:create-github-release",
     "deploy:create-github-release": "tar -czvf dist.tar.gz dist && gh release create v$npm_package_version --generate-notes dist.tar.gz",
     "test": "npm run test:unit && npm run test:e2e && npm run test:llm",
     "test:unit": "find src -name '*.test.ts' -not -path '*/test/stress.stress.ts' -not -path '*/test/memory-leak.test.ts' -not -path '*/test/performance.perftest.ts' | xargs tsx --test",
@@ -24,9 +27,9 @@
     "test:integration": "npm run build && npm run test:e2e && npm run test:llm",
     "test:performance": "find src -name '*.perftest.ts' | xargs tsx --test",
     "test:smoke": "npm run build && tsx src/test/smoke.test.ts",
-    "test:security": "npm run test:unit -- src/security/security-tests.test.ts && npm audit --audit-level=moderate",
+    "test:security": "tsx --test src/security/security-tests.test.ts",
     "test:stress": "find src -name '*.stress.ts' | xargs tsx --test --test-concurrency=1",
-    "test:memory": "node --expose-gc --inspect=0.0.0.0:9229 $(which tsx) --test src/test/memory-leak.test.ts",
+    "test:memory": "node --expose-gc $(which tsx) --test src/test/memory-leak.test.ts",
     "test:safe": "find src -name '*.test.ts' -not -path '*/test/stress.stress.ts' -not -path '*/test/memory-leak.test.ts' -not -path '*/test/performance.perftest.ts' | xargs tsx --test",
     "test:ultra-safe": "find src -name '*.test.ts' -path '*/plugins/local-llm-rename/*.test.ts' -o -path '*/babel/*.test.ts' -o -path '*/security/*.test.ts' | xargs tsx --test",
     "test:minimal": "tsx --test src/plugins/visit-all-identifiers.test.ts src/security/security-tests.test.ts",

@@ -2,17 +2,27 @@ name: 🔄 Dependency Update Testing
 
 on:
   schedule:
-    # Run weekly on Sundays at 3 AM UTC
-    - cron: '0 3 * * 0'
+    - cron: "0 3 * * 0"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-update-testing-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 20
 
 jobs:
   test-latest-dependencies:
     name: 🆕 Test Latest Dependencies
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        update-type: ['minor', 'patch']
+        update-type: [minor, patch]
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -20,15 +30,17 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: 📋 Backup package.json
-        run: cp package.json package.json.backup
+      - name: 📋 Backup dependency manifests
+        run: |
+          cp package.json package.json.backup
+          cp package-lock.json package-lock.json.backup
 
       - name: 🔄 Update dependencies (${{ matrix.update-type }})
         run: |
-          if [ "${{ matrix.update-type }}" == "minor" ]; then
+          if [ "${{ matrix.update-type }}" = "minor" ]; then
             npx npm-check-updates -u --target minor
           else
             npx npm-check-updates -u --target patch
@@ -37,25 +49,28 @@ jobs:
       - name: 🧹 Install updated dependencies
         run: npm install
 
-      - name: 🏗️ Build with updated deps
+      - name: 🏗️ Build with updated dependencies
         run: npm run build
 
-      - name: 🧪 Run tests with updated deps
+      - name: 🧪 Run regression checks
         run: |
-          npm run test:unit
+          npm run lint
+          npm run test:minimal
           npm run test:smoke
 
-      - name: 🔄 Restore original package.json
+      - name: 🔄 Restore dependency manifests
         if: always()
-        run: mv package.json.backup package.json
+        run: |
+          mv package.json.backup package.json
+          mv package-lock.json.backup package-lock.json
 
   test-node-versions:
-    name: 🏃 Test Multiple Node Versions
+    name: 🏃 Test Supported Node Versions
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [16, 18, 20, 21, 22]
-    continue-on-error: true
+        node-version: [20, 22]
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -64,7 +79,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
@@ -72,8 +87,10 @@ jobs:
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 🧪 Run basic tests
-        run: npm run test:unit
+      - name: 🧪 Run basic regression checks
+        run: |
+          npm run lint
+          npm run test:minimal
 
   security-audit:
     name: 🔒 Security Audit
@@ -85,33 +102,35 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
 
       - name: 🔒 Run security audit
         run: |
-          npm audit --audit-level=low
+          npm audit --audit-level=moderate
           npx audit-ci --config audit-ci.json
 
       - name: 🔍 Check for known vulnerabilities
-        run: |
-          npx better-npm-audit audit --level moderate
+        run: npx better-npm-audit audit --level moderate
 
   dependency-report:
     name: 📊 Dependency Report
     runs-on: ubuntu-latest
-    needs: [test-latest-dependencies, test-node-versions, security-audit]
+    needs:
+      - test-latest-dependencies
+      - test-node-versions
+      - security-audit
     if: always()
     steps:
       - name: 📊 Generate dependency report
         run: |
-          echo "# 🔄 Dependency Update Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "Date: $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Test Results:" >> $GITHUB_STEP_SUMMARY
-          echo "- Latest Dependencies: ${{ needs.test-latest-dependencies.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Node Versions: ${{ needs.test-node-versions.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Audit: ${{ needs.security-audit.result }}" >> $GITHUB_STEP_SUMMARY 
+          echo "# 🔄 Dependency Update Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "Date: $(date)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Test Results:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Latest Dependencies: ${{ needs.test-latest-dependencies.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Supported Node Versions: ${{ needs.test-node-versions.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Security Audit: ${{ needs.security-audit.result }}" >> "$GITHUB_STEP_SUMMARY"

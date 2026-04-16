@@ -2,37 +2,43 @@ name: 🧪 Comprehensive Testing Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   schedule:
-    # Run tests daily at 2 AM UTC
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comprehensive-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: 20
   FORCE_COLOR: 1
 
 jobs:
-  # ===== SETUP & VALIDATION =====
   setup:
-    name: 🔧 Setup & Validation
+    name: 🔧 Setup & Build
     runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
+    timeout-minutes: 15
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
-      - name: 🔑 Generate cache key
-        id: cache-key
-        run: echo "key=node-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
@@ -40,10 +46,6 @@ jobs:
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 📋 Validate package.json
-        run: npm audit --audit-level=moderate
-
-  # ===== LINTING & CODE QUALITY =====
   code-quality:
     name: 🎨 Code Quality
     runs-on: ubuntu-latest
@@ -56,7 +58,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
@@ -70,7 +72,6 @@ jobs:
       - name: 📊 TypeScript compilation check
         run: npx tsc --noEmit
 
-  # ===== UNIT TESTS WITH COVERAGE =====
   unit-tests:
     name: 🧪 Unit Tests & Coverage
     runs-on: ubuntu-latest
@@ -83,7 +84,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
@@ -95,7 +96,7 @@ jobs:
         run: npm run test:coverage
 
       - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage/lcov.info
           flags: unittests
@@ -104,20 +105,22 @@ jobs:
 
       - name: 📈 Coverage summary
         run: |
-          echo "## Coverage Summary 📊" >> $GITHUB_STEP_SUMMARY
-          cat coverage/coverage-summary.json | jq -r '
-            .total | 
+          echo "## Coverage Summary 📊" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '
+            .total |
             "- **Lines**: \(.lines.pct)%",
-            "- **Functions**: \(.functions.pct)%", 
+            "- **Functions**: \(.functions.pct)%",
             "- **Branches**: \(.branches.pct)%",
             "- **Statements**: \(.statements.pct)%"
-          ' >> $GITHUB_STEP_SUMMARY
+          ' coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
-  # ===== SECURITY TESTS =====
   security-tests:
     name: 🔒 Security Tests
     runs-on: ubuntu-latest
     needs: setup
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -126,7 +129,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
@@ -141,31 +144,26 @@ jobs:
         run: npm audit --audit-level=moderate
 
       - name: 🔍 CodeQL Analysis
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
       - name: 🏗️ Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
       - name: 🔍 Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
-  # ===== CROSS-PLATFORM TESTING =====
   cross-platform:
     name: 🌍 Cross-Platform Tests
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18, 20, 21]
-        exclude:
-          # Reduce CI load by excluding some combinations
-          - os: windows-latest
-            node-version: 18
-          - os: macos-latest
-            node-version: 18
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}
     needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20, 22]
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -174,22 +172,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
 
       - name: 🏗️ Build project
         run: npm run build
-
-      - name: 💾 Cache test model
-        uses: actions/cache@v4
-        with:
-          path: ~/.reverse-machine/models/
-          key: models-phi-${{ runner.os }}
-
-      - name: 📥 Download CI model
-        run: npm run download-ci-model
 
       - name: 🧪 Run core tests
         run: npm run test:unit
@@ -197,12 +186,14 @@ jobs:
       - name: 💨 Run smoke tests
         run: npm run test:smoke
 
-  # ===== INTEGRATION & E2E TESTS =====
   integration-tests:
-    name: 🔗 Integration & E2E Tests
-    runs-on: macos-latest
+    name: 🔗 Integration & Compatibility Tests
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
     needs: setup
-    timeout-minutes: 60
+    timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -211,22 +202,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
 
       - name: 🏗️ Build project
         run: npm run build
-
-      - name: 💾 Cache test model
-        uses: actions/cache@v4
-        with:
-          path: ~/.reverse-machine/models/
-          key: models-phi-${{ runner.os }}
-
-      - name: 📥 Download CI model
-        run: npm run download-ci-model
 
       - name: 🔗 Run integration tests
         run: npm run test:integration
@@ -234,14 +216,17 @@ jobs:
       - name: 🧪 Run compatibility tests
         run: tsx --test src/test/compatibility.test.ts
 
-      - name: 🔗 Run full integration suite
+      - name: 🔁 Run focused integration coverage
         run: tsx --test src/test/integration.test.ts
 
-  # ===== PERFORMANCE TESTS =====
   performance-tests:
     name: ⚡ Performance Tests
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     needs: setup
+    timeout-minutes: 30
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -250,37 +235,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
 
       - name: 🏗️ Build project
         run: npm run build
-
-      - name: 💾 Cache test model
-        uses: actions/cache@v4
-        with:
-          path: ~/.reverse-machine/models/
-          key: models-phi-${{ runner.os }}
-
-      - name: 📥 Download CI model
-        run: npm run download-ci-model
 
       - name: ⚡ Run performance tests
         run: npm run test:performance
 
-      - name: 📊 Performance benchmark
-        run: |
-          echo "## Performance Results ⚡" >> $GITHUB_STEP_SUMMARY
-          echo "Performance tests completed successfully" >> $GITHUB_STEP_SUMMARY
+      - name: 📊 Performance benchmark summary
+        run: echo "Performance tests completed successfully" >> "$GITHUB_STEP_SUMMARY"
 
-  # ===== MEMORY & STRESS TESTS =====
   stress-tests:
     name: 💪 Stress & Memory Tests
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     needs: setup
     timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -289,22 +265,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: 🧹 Install dependencies
         run: npm ci
 
       - name: 🏗️ Build project
         run: npm run build
-
-      - name: 💾 Cache test model
-        uses: actions/cache@v4
-        with:
-          path: ~/.reverse-machine/models/
-          key: models-phi-${{ runner.os }}
-
-      - name: 📥 Download CI model
-        run: npm run download-ci-model
 
       - name: 💪 Run stress tests
         run: npm run test:stress
@@ -312,38 +279,63 @@ jobs:
       - name: 🧠 Run memory tests
         run: npm run test:memory
 
-  # ===== COMPREHENSIVE SUMMARY =====
   test-summary:
     name: 📋 Test Summary
     runs-on: ubuntu-latest
-    needs: [setup, code-quality, unit-tests, security-tests, cross-platform, integration-tests, performance-tests, stress-tests]
+    needs:
+      - setup
+      - code-quality
+      - unit-tests
+      - security-tests
+      - cross-platform
+      - integration-tests
+      - performance-tests
+      - stress-tests
     if: always()
     steps:
       - name: 📊 Generate summary
         run: |
-          echo "# 🧪 Comprehensive Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "## Test Job Results:" >> $GITHUB_STEP_SUMMARY
-          echo "- Setup: ${{ needs.setup.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security: ${{ needs.security-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Cross-Platform: ${{ needs.cross-platform.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Integration: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Performance: ${{ needs.performance-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Stress/Memory: ${{ needs.stress-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📈 Statistics:" >> $GITHUB_STEP_SUMMARY
-          echo "- Total test jobs: 8" >> $GITHUB_STEP_SUMMARY
-          echo "- Workflow run time: ~30-45 minutes" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms tested: Ubuntu, Windows, macOS" >> $GITHUB_STEP_SUMMARY
-          echo "- Node.js versions: 18, 20, 21" >> $GITHUB_STEP_SUMMARY
+          echo "# 🧪 Comprehensive Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Test Job Results:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Setup: ${{ needs.setup.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Security: ${{ needs.security-tests.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cross-Platform: ${{ needs.cross-platform.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Integration: ${{ needs.integration-tests.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Performance: ${{ needs.performance-tests.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Stress/Memory: ${{ needs.stress-tests.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Scope:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Quick PR validation stays in the dedicated PR workflow." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cross-platform, integration, performance, and stress suites run on main, schedule, and manual dispatch." >> "$GITHUB_STEP_SUMMARY"
 
       - name: ✅ All tests passed
-        if: ${{ needs.setup.result == 'success' && needs.code-quality.result == 'success' && needs.unit-tests.result == 'success' && needs.security-tests.result == 'success' && needs.cross-platform.result == 'success' && needs.integration-tests.result == 'success' && needs.performance-tests.result == 'success' && needs.stress-tests.result == 'success' }}
+        if: >-
+          ${{
+            needs.setup.result == 'success' &&
+            needs.code-quality.result == 'success' &&
+            needs.unit-tests.result == 'success' &&
+            needs.security-tests.result == 'success' &&
+            (needs.cross-platform.result == 'success' || needs.cross-platform.result == 'skipped') &&
+            (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
+            (needs.performance-tests.result == 'success' || needs.performance-tests.result == 'skipped') &&
+            (needs.stress-tests.result == 'success' || needs.stress-tests.result == 'skipped')
+          }}
         run: echo "🎉 All comprehensive tests passed!"
 
       - name: ❌ Some tests failed
-        if: ${{ needs.setup.result != 'success' || needs.code-quality.result != 'success' || needs.unit-tests.result != 'success' || needs.security-tests.result != 'success' || needs.cross-platform.result != 'success' || needs.integration-tests.result != 'success' || needs.performance-tests.result != 'success' || needs.stress-tests.result != 'success' }}
+        if: >-
+          ${{
+            needs.setup.result != 'success' ||
+            needs.code-quality.result != 'success' ||
+            needs.unit-tests.result != 'success' ||
+            needs.security-tests.result != 'success' ||
+            !contains(fromJSON('["success","skipped"]'), needs.cross-platform.result) ||
+            !contains(fromJSON('["success","skipped"]'), needs.integration-tests.result) ||
+            !contains(fromJSON('["success","skipped"]'), needs.performance-tests.result) ||
+            !contains(fromJSON('["success","skipped"]'), needs.stress-tests.result)
+          }}
         run: |
           echo "❌ Some tests failed. Check the job results above."
-          exit 1 
+          exit 1
